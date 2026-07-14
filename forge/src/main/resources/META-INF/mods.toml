@@ -1,0 +1,26 @@
+modLoader = "javafml"
+loaderVersion = "[50,)"
+license = "MIT"
+
+[[mods]]
+modId = "obsidian_backup"
+version = "${version}"
+displayName = "Obsidian Backup"
+authors = "ObsidianTeam"
+description = """
+Enterprise-grade CAS incremental backup system for Minecraft servers.
+Sidecar architecture with UDS IPC, ACID backup transactions, and in-game command tree.
+
+Multi-loader support: Forge, NeoForge, Fabric, Bukkit/Paper.
+"""
+logoFile = "obsidian_icon.png"
+
+[[dependencies.obsidian_backup]]
+modId = "forge"
+type = "required"
+versionRange = "[50,)"
+
+[[dependencies.obsidian_backup]]
+modId = "minecraft"
+type = "required"
+versionRange = "[1.21.1,1.22)"

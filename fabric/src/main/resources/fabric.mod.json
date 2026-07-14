@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "obsidian_backup",
+  "version": "${version}",
+  "name": "Obsidian Backup",
+  "description": "Enterprise-grade CAS incremental backup system for Minecraft servers. Sidecar architecture with UDS IPC, ACID backup transactions, and in-game command tree. Multi-loader: Fabric, NeoForge, Forge, Bukkit.",
+  "authors": ["ObsidianTeam"],
+  "contact": {
+    "homepage": "https://github.com/shrimp-211/obsidian-backup",
+    "sources": "https://github.com/shrimp-211/obsidian-backup"
+  },
+  "license": "MIT",
+  "environment": "server",
+  "entrypoints": {
+    "server": ["com.obsidian.backup.fabric.ObsidianBackupFabric"]
+  },
+  "depends": {
+    "fabricloader": ">=0.16",
+    "minecraft": ">=1.21.1",
+    "fabric-api": "*",
+    "java": ">=21"
+  },
+  "suggests": {
+    "luckperms": ">=5"
+  }
+}

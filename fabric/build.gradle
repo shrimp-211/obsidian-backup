@@ -1,0 +1,52 @@
+plugins {
+    id 'fabric-loom' version '1.7-SNAPSHOT'
+    id 'maven-publish'
+}
+
+version = "${project.minecraft_version}-${rootProject.mod_version}"
+group = 'com.obsidian.backup'
+
+base {
+    archivesName = 'obsidian-backup-fabric'
+}
+
+loom {
+    runs {
+        server {
+            server()
+            ideConfigGenerated(true)
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://maven.fabricmc.net/' }
+    maven { url = 'https://oss.sonatype.org/content/repositories/snapshots' }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.officialMojangMappings()
+
+    modImplementation "net.fabricmc:fabric-loader:${project.fabric_loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+    // Shared common library
+    implementation project(':common')
+    include project(':common')
+
+    // Gson (bundled in MC but explicit is safer)
+    implementation 'com.google.code.gson:gson:2.11.0'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 21
+}
+
+jar {
+    from("LICENSE") {
+        rename { "${it}_${project.archivesBaseName}" }
+    }
+}

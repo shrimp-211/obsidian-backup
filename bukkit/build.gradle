@@ -1,0 +1,46 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+version = "${project.minecraft_version}-${rootProject.mod_version}"
+group = 'com.obsidian.backup'
+
+base {
+    archivesName = 'obsidian-backup-bukkit'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://repo.papermc.io/repository/maven-public/' }
+}
+
+dependencies {
+    // Paper API (includes Bukkit API with performance patches)
+    compileOnly "io.papermc.paper:paper-api:${project.paper_api_version}"
+
+    // Shared common library
+    implementation project(':common')
+    include project(':common')
+
+    implementation 'com.google.code.gson:gson:2.11.0'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 21
+}
+
+jar {
+    from {
+        configurations.runtimeClasspath.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+}

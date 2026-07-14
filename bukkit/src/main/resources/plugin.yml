@@ -1,0 +1,30 @@
+name: ObsidianBackup
+version: ${version}
+main: com.obsidian.backup.bukkit.ObsidianBackupPlugin
+api-version: "1.21"
+description: Enterprise-grade CAS incremental backup system for Minecraft servers
+author: ObsidianTeam
+website: https://github.com/shrimp-211/obsidian-backup
+load: POSTWORLD
+
+permissions:
+  obsidian.admin.monitor:
+    description: Access to /obsidian status, top, forecast, diff, browse
+    default: op
+  obsidian.admin.snapshot:
+    description: Access to /obsidian backup, clone, pin, snapshot export/import
+    default: op
+  obsidian.admin.restore:
+    description: Access to /obsidian restore, rollback
+    default: op
+  obsidian.admin.verify:
+    description: Access to /obsidian verify repair
+    default: op
+  obsidian.admin.*:
+    description: All obsidian permissions
+    default: op
+    children:
+      obsidian.admin.monitor: true
+      obsidian.admin.snapshot: true
+      obsidian.admin.restore: true
+      obsidian.admin.verify: true
