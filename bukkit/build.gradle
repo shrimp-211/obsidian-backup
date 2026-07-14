@@ -3,16 +3,19 @@ plugins {
     id 'maven-publish'
 }
 
-version = "${project.minecraft_version}-${rootProject.mod_version}"
+apply from: rootProject.file('versions.gradle')
+def v = versions()
+
+version = "${ext.mc}-${rootProject.mod_version}"
 group = 'com.obsidian.backup'
 
 base {
-    archivesName = 'obsidian-backup-bukkit'
+    archivesName = "obsidian-backup-bukkit-${ext.mc}"
 }
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion = JavaLanguageVersion.of(v.java_version)
     }
 }
 
@@ -22,25 +25,26 @@ repositories {
 }
 
 dependencies {
-    // Paper API (includes Bukkit API with performance patches)
-    compileOnly "io.papermc.paper:paper-api:${project.paper_api_version}"
+    compileOnly "io.papermc.paper:paper-api:${v.paper_api}"
 
-    // Shared common library
     implementation project(':common')
-    include project(':common')
+
+    // Include common module in the plugin JAR
+    from(configurations.runtimeClasspath) {
+        into('lib/')
+    }
 
     implementation 'com.google.code.gson:gson:2.11.0'
 }
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
-    options.release = 21
+    options.release = v.java_version
 }
 
+// Bundle the common library into the plugin jar
 jar {
     from {
-        configurations.runtimeClasspath.collect {
-            it.isDirectory() ? it : zipTree(it)
-        }
+        project(':common').sourceSets.main.output
     }
 }

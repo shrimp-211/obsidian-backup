@@ -3,11 +3,15 @@ plugins {
     id 'maven-publish'
 }
 
-version = "${project.minecraft_version}-${rootProject.mod_version}"
+// Apply multi-version configuration
+apply from: rootProject.file('versions.gradle')
+def v = versions()
+
+version = "${ext.mc}-${rootProject.mod_version}"
 group = 'com.obsidian.backup'
 
 base {
-    archivesName = 'obsidian-backup-fabric'
+    archivesName = "obsidian-backup-fabric-${ext.mc}"
 }
 
 loom {
@@ -26,23 +30,22 @@ repositories {
 }
 
 dependencies {
-    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    minecraft "com.mojang:minecraft:${ext.mc}"
     mappings loom.officialMojangMappings()
 
-    modImplementation "net.fabricmc:fabric-loader:${project.fabric_loader_version}"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+    modImplementation "net.fabricmc:fabric-loader:${v.fabric_loader}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${v.fabric_api}"
 
-    // Shared common library
+    // Shared common library (version-independent)
     implementation project(':common')
     include project(':common')
 
-    // Gson (bundled in MC but explicit is safer)
     implementation 'com.google.code.gson:gson:2.11.0'
 }
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
-    options.release = 21
+    options.release = v.java_version
 }
 
 jar {

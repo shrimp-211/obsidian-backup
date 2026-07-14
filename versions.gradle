@@ -1,0 +1,45 @@
+/**
+ * Multi-version Minecraft configuration.
+ *
+ * Usage:
+ *   gradle build -Pmc=1.21.1   (default)
+ *   gradle build -Pmc=1.20.1
+ *
+ * Each version block defines the dependency versions for that MC release.
+ */
+
+ext {
+    mc = project.hasProperty('mc') ? project.mc : '1.21.1'
+}
+
+// Helper: resolve version for the current MC target
+ext.versions = { ->
+    def v = [:]
+
+    switch (ext.mc) {
+        case '1.21.1':
+            v.fabric_loader = '0.16.7'
+            v.fabric_api = '0.102.0'
+            v.forge_version = '51.0.30'
+            v.neoforge_version = '21.1.80'
+            v.paper_api = '1.21.1-R0.1-SNAPSHOT'
+            v.java_version = 21
+            v.parchment = null  // Parchment not yet available for 1.21.1
+            break
+
+        case '1.20.1':
+            v.fabric_loader = '0.15.11'
+            v.fabric_api = '0.92.2'
+            v.forge_version = '47.3.0'
+            v.neoforge_version = null  // NeoForge doesn't support 1.20.1
+            v.paper_api = '1.20.1-R0.1-SNAPSHOT'
+            v.java_version = 17
+            v.parchment = '1.20.1-2023.09.03'
+            break
+
+        default:
+            throw new GradleException("Unsupported Minecraft version: ${ext.mc}. Supported: 1.21.1, 1.20.1")
+    }
+
+    return v
+}
