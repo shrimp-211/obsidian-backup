@@ -22,7 +22,9 @@ import java.util.UUID
  *   COMMITTING → WHITE
  */
 class BossBarIndicator {
-    private val bossBars = mutableMapOf<UUID, ServerBossEvent>()
+    // Use a fixed key so the same BossBar is reused across progress updates
+    private val progressBarKey = UUID.fromString("00000000-0000-0000-0000-000000000001")
+    private var progressBar: ServerBossEvent? = null
 
     private val barId = ResourceLocation.fromNamespaceAndPath("obsidian_backup", "backup_progress")
 
@@ -32,35 +34,33 @@ class BossBarIndicator {
         percent: Float,
         detail: String
     ) {
-        val bar = bossBars.getOrPut(UUID.randomUUID()) {
-            ServerBossEvent(
-                Component.literal("Obsidian Backup"),
-                phase.bossBarColor,
-                BossEvent.BossBarOverlay.PROGRESS
-            ).apply {
-                isVisible = true
-                setProgress(0f)
-            }
+        val bar = progressBar ?: ServerBossEvent(
+            Component.literal("Obsidian Backup"),
+            phase.bossBarColor,
+            BossEvent.BossBarOverlay.PROGRESS
+        ).apply {
+            isVisible = true
+            setProgress(0f)
+            progressBar = this
         }
 
         bar.color = phase.bossBarColor
         bar.name = Component.literal("§lObsidian Backup§r §8|§r ${phase.label} §8[${String.format("%.1f", percent)}%]§r §7$detail")
         bar.setProgress((percent / 100f).coerceIn(0f, 1f))
 
-        // Add all players to the bar
         players.forEach { bar.addPlayer(it) }
     }
 
     fun hideProgress(players: Collection<ServerPlayer>) {
-        bossBars.values.forEach { bar ->
+        progressBar?.let { bar ->
             players.forEach { bar.removePlayer(it) }
             bar.isVisible = false
         }
-        bossBars.clear()
+        progressBar = null
     }
 
     fun hideForPlayer(player: ServerPlayer) {
-        bossBars.values.forEach { bar -> bar.removePlayer(player) }
+        progressBar?.let { bar -> bar.removePlayer(player) }
     }
 
     enum class BackupPhase(val label: String, val bossBarColor: BossEvent.BossBarColor) {

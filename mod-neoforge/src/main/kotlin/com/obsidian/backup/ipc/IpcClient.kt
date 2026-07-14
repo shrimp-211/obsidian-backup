@@ -9,22 +9,30 @@ import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.net.UnixDomainSocketAddress
 import java.nio.channels.Channels
+import java.nio.channels.ClosedChannelException
 import java.nio.channels.SocketChannel
 import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.function.Consumer
 
 /**
  * IPC client that communicates with the Obsidian Sidecar daemon
  * via Unix Domain Socket (UDS) using Java 16+ native support.
+ *
+ * Thread safety: uses AtomicBoolean for the connected flag to ensure
+ * visibility across the read thread and the main server thread.
+ * The read loop handles all known channel-closure exceptions explicitly.
  */
 class IpcClient(private val config: ModConfig) {
 
     private var channel: SocketChannel? = null
     private var writer: BufferedWriter? = null
     private var reader: BufferedReader? = null
-    private var connected = false
+
+    // AtomicBoolean ensures the read thread sees disconnection immediately
+    private val connected = AtomicBoolean(false)
 
     private val pendingRequests = ConcurrentHashMap<String, Consumer<IpcProtocol.Response>>()
     private val responseQueue = ConcurrentLinkedQueue<String>()
@@ -36,7 +44,7 @@ class IpcClient(private val config: ModConfig) {
      * Connect to the Sidecar daemon via UDS.
      */
     fun connect(): Boolean {
-        if (connected) return true
+        if (isConnected()) return true
 
         return try {
             val socketPath = Path.of(config.sidecarSocketPath)
@@ -48,10 +56,9 @@ class IpcClient(private val config: ModConfig) {
             writer = BufferedWriter(OutputStreamWriter(Channels.newOutputStream(channel)))
             reader = BufferedReader(InputStreamReader(Channels.newInputStream(channel)))
 
-            connected = true
+            connected.set(true)
             ObsidianBackupMod.LOGGER.info("[IPC] Connected to Sidecar at {}", config.sidecarSocketPath)
 
-            // Start background read thread
             startReadLoop()
             true
         } catch (e: Exception) {
@@ -61,16 +68,34 @@ class IpcClient(private val config: ModConfig) {
     }
 
     /**
-     * Disconnect from the Sidecar.
+     * Disconnect from the Sidecar gracefully.
+     *
+     * Order of operations is important:
+     * 1. Set connected = false (stops the read loop)
+     * 2. Interrupt the read thread (breaks any blocking read)
+     * 3. Wait briefly for the thread to exit
+     * 4. Close resources
      */
     fun disconnect() {
-        connected = false
-        readThread?.interrupt()
+        connected.set(false)
+        val thread = readThread
+        readThread = null
+        thread?.interrupt()
+
+        // Give the read thread a moment to exit gracefully
+        try {
+            thread?.join(500)
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+        }
+
         try {
             writer?.close()
             reader?.close()
             channel?.close()
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+            // Best-effort cleanup
+        }
         writer = null
         reader = null
         channel = null
@@ -78,28 +103,45 @@ class IpcClient(private val config: ModConfig) {
     }
 
     /**
-     * Start a background thread to continuously read responses from the Sidecar.
+     * Background thread that reads responses from the Sidecar.
+     *
+     * Uses AtomicBoolean.get() for the loop condition to guarantee
+     * visibility of disconnection. Handles all known channel-closure
+     * exceptions explicitly to avoid silent thread exit.
      */
     private fun startReadLoop() {
         readThread = Thread {
-            while (connected) {
-                try {
-                    val line = reader?.readLine() ?: break
-                    if (line.isBlank()) continue
-                    responseQueue.add(line)
-                } catch (e: InterruptedException) {
-                    break
-                } catch (e: Exception) {
-                    if (connected) {
-                        ObsidianBackupMod.LOGGER.error("[IPC] Read error: {}", e.message)
+            try {
+                while (connected.get()) {
+                    try {
+                        val line = reader?.readLine()
+                        if (line == null) {
+                            // EOF — sidecar closed the connection
+                            ObsidianBackupMod.LOGGER.warn("[IPC] Sidecar closed connection (EOF)")
+                            break
+                        }
+                        if (line.isBlank()) continue
+                        responseQueue.add(line)
+                    } catch (e: InterruptedException) {
+                        // Expected during disconnect — exit cleanly
+                        break
+                    } catch (e: ClosedChannelException) {
+                        // Channel closed by disconnect() — exit cleanly
+                        break
+                    } catch (e: Exception) {
+                        if (connected.get()) {
+                            ObsidianBackupMod.LOGGER.error("[IPC] Read error: {}", e.message)
+                        }
+                        break
                     }
-                    break
                 }
-            }
-            // If we exit the read loop unexpectedly, mark as disconnected
-            if (connected) {
-                ObsidianBackupMod.LOGGER.warn("[IPC] Read loop exited unexpectedly")
-                connected = false
+            } catch (e: Exception) {
+                if (connected.get()) {
+                    ObsidianBackupMod.LOGGER.error("[IPC] Read loop crashed: {}", e.message)
+                }
+            } finally {
+                // Ensure connected is false if we exited unexpectedly
+                connected.set(false)
             }
         }.apply {
             name = "Obsidian-IPC-Reader"
@@ -132,7 +174,7 @@ class IpcClient(private val config: ModConfig) {
         params: Map<String, Any?>,
         callback: Consumer<IpcProtocol.Response>
     ): Boolean {
-        if (!connected) {
+        if (!isConnected()) {
             ObsidianBackupMod.LOGGER.warn("[IPC] Not connected to Sidecar")
             return false
         }
@@ -157,9 +199,12 @@ class IpcClient(private val config: ModConfig) {
 
     /**
      * Send a request synchronously (blocking, for use off the main thread).
+     *
+     * NOTE: This bypasses the callback/pollResponse mechanism. The caller
+     * must ensure this is not interleaved with async sendRequest calls.
      */
     fun sendRequestSync(op: IpcProtocol.OpCode, params: Map<String, Any?>): IpcProtocol.Response? {
-        if (!connected) return null
+        if (!isConnected()) return null
 
         val request = IpcProtocol.Request(op = op.code, params = params)
 
@@ -170,7 +215,6 @@ class IpcClient(private val config: ModConfig) {
                 writer!!.newLine()
                 writer!!.flush()
             }
-            // Read response (blocking)
             val responseLine = reader?.readLine() ?: return null
             IpcProtocol.parseResponse(responseLine)
         } catch (e: Exception) {
@@ -179,5 +223,5 @@ class IpcClient(private val config: ModConfig) {
         }
     }
 
-    fun isConnected(): Boolean = connected
+    fun isConnected(): Boolean = connected.get()
 }
