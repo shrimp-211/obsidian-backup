@@ -52,8 +52,7 @@ dependencies {
     jarJar(project(':common')) {
         jarJar.ranged(it, '[0.2,1)')
     }
-
-    implementation 'com.google.code.gson:gson:2.11.0'
+    // Gson is transitive via common module
 }
 
 tasks.withType(JavaCompile).configureEach {

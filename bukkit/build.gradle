@@ -26,15 +26,8 @@ repositories {
 
 dependencies {
     compileOnly "io.papermc.paper:paper-api:${v.paper_api}"
-
     implementation project(':common')
-
-    // Include common module in the plugin JAR
-    from(configurations.runtimeClasspath) {
-        into('lib/')
-    }
-
-    implementation 'com.google.code.gson:gson:2.11.0'
+    // Gson is transitive via common module
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -42,9 +35,12 @@ tasks.withType(JavaCompile).configureEach {
     options.release = v.java_version
 }
 
-// Bundle the common library into the plugin jar
+// Bundle the common library into the plugin jar (fat-JAR approach)
 jar {
     from {
-        project(':common').sourceSets.main.output
+        configurations.runtimeClasspath.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
     }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }

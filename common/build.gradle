@@ -3,12 +3,18 @@ plugins {
     id 'maven-publish'
 }
 
+// Target Java 17 — lowest common denominator for 1.20.1/1.21.1
+// Common module contains no MC-version-specific code, so using the
+// minimum Java version ensures bytecode compatibility with all targets.
+apply from: rootProject.file('versions.gradle')
+def v = versions()
+
 group = 'com.obsidian.backup'
 version = rootProject.common_version
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion = JavaLanguageVersion.of(v.java_version)
     }
     withSourcesJar()
 }
@@ -18,15 +24,12 @@ repositories {
 }
 
 dependencies {
-    // Gson for JSON serialization (same as NeoForge mod)
     implementation 'com.google.code.gson:gson:2.11.0'
-
-    // Minimal dependencies — no Minecraft APIs
 }
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
-    options.release = 21
+    options.release = v.java_version
 }
 
 publishing {

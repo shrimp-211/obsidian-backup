@@ -1,0 +1,91 @@
+name: Build & Test
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  # Rust Sidecar + CLI
+  rust:
+    name: Rust ${{ matrix.package }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package: [sidecar, client-cli]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        run: rustup update stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ matrix.package }}-${{ hashFiles(format('{0}/Cargo.lock', matrix.package)) }}
+
+      - name: Build ${{ matrix.package }}
+        run: cargo build --locked
+        working-directory: ${{ matrix.package }}
+
+      - name: Test ${{ matrix.package }}
+        run: cargo test
+        working-directory: ${{ matrix.package }}
+
+      - name: Clippy ${{ matrix.package }}
+        run: cargo clippy -- -D warnings
+        working-directory: ${{ matrix.package }}
+
+  # Java multi-version multi-loader
+  java:
+    name: Java ${{ matrix.mc }} (${{ matrix.loader }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        mc: ['1.21.1', '1.20.1']
+        loader: [fabric, forge, bukkit]
+        exclude:
+          # NeoForge is 1.21.1 only
+          - mc: '1.20.1'
+            loader: forge
+            # Forge 1.20.1 uses different plugin, only test Fabric + Bukkit
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ matrix.mc == '1.21.1' && '21' || '17' }}
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build ${{ matrix.loader }} (${{ matrix.mc }})
+        run: ./gradlew :${{ matrix.loader }}:build -Pmc=${{ matrix.mc }} --no-daemon
+
+  # Common module (version-independent)
+  common:
+    name: Common Library
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build common
+        run: ./gradlew :common:build --no-daemon
