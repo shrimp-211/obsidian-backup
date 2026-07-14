@@ -1,0 +1,37 @@
+# Obsidian Backup - NeoForge Mod Metadata
+modLoader = "javafml"
+loaderVersion = "${loader_version_range}"
+license = "${mod_license}"
+
+[[mods]]
+modId = "${mod_id}"
+version = "${mod_version}"
+displayName = "${mod_name}"
+authors = "${mod_authors}"
+description = """
+${mod_description}
+
+Subsystems:
+- Sidecar IPC bridge via Unix Domain Socket (UDS)
+- Brigadier command tree: /obsidian backup, status, restore, top
+- In-game BossBar progress indicator
+- Application Hook API for backup lifecycle events
+- ACID backup transaction support
+"""
+logoFile = "obsidian_icon.png"
+
+[[dependencies.${mod_id}]]
+modId = "neoforge"
+type = "required"
+versionRange = "${neo_version_range}"
+
+[[dependencies.${mod_id}]]
+modId = "minecraft"
+type = "required"
+versionRange = "${minecraft_version_range}"
+
+# Optional: LuckPerms integration for permission nodes
+[[dependencies.${mod_id}]]
+modId = "luckperms"
+type = "optional"
+versionRange = "[5,)"
