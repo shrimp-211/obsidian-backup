@@ -1,6 +1,6 @@
 modLoader = "javafml"
 loaderVersion = "[50,)"
-license = "MIT"
+license = "MPL-2.0"
 
 [[mods]]
 modId = "obsidian_backup"

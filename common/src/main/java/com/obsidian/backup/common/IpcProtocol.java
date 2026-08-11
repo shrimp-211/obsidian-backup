@@ -30,6 +30,7 @@ public final class IpcProtocol {
         FORECAST("forecast"),
         EXPORT("export"),
         IMPORT("import"),
+        REMOTE_SYNC("remote_sync"),
         AUTH("auth");
 
         public final String code;
@@ -187,5 +188,12 @@ public final class IpcProtocol {
 
     public static Map<String, Object> paramsAuth(String token) {
         return Map.of("token", token);
+    }
+
+    public static Map<String, Object> paramsRemoteSync(String action, String snapshotId) {
+        var params = new LinkedHashMap<String, Object>();
+        params.put("action", action);
+        if (snapshotId != null) params.put("snapshot_id", snapshotId);
+        return params;
     }
 }

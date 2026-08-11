@@ -175,6 +175,37 @@ public class IpcClient implements AutoCloseable {
         }
     }
 
+    /**
+     * Send a request synchronously (blocking read, for use off the main thread).
+     *
+     * NOTE: bypasses the callback/pollResponses mechanism; do not interleave
+     * with async {@link #sendRequest} calls on the same connection.
+     */
+    public IpcProtocol.Response sendRequestSync(IpcProtocol.OpCode op, Map<String, Object> params) {
+        if (!isConnected()) {
+            logger.warn("[IPC] Not connected");
+            return null;
+        }
+        var request = new IpcProtocol.Request(op.code, params);
+        try {
+            String json = IpcProtocol.toJson(request);
+            synchronized (writer) {
+                writer.write(json);
+                writer.newLine();
+                writer.flush();
+            }
+            String line = reader.readLine();
+            if (line == null) {
+                logger.warn("[IPC] Sync request got EOF");
+                return null;
+            }
+            return IpcProtocol.parseResponse(line);
+        } catch (Exception e) {
+            logger.error("[IPC] Sync request failed: {}", e.getMessage());
+            return null;
+        }
+    }
+
     public boolean isConnected() {
         return connected.get();
     }

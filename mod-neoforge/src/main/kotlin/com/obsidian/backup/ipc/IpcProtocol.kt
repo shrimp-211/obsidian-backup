@@ -31,6 +31,10 @@ object IpcProtocol {
         @SerializedName("rollback") ROLLBACK("rollback"),
         @SerializedName("cancel")  CANCEL("cancel"),
         @SerializedName("forecast") FORECAST("forecast"),
+        @SerializedName("export")  EXPORT("export"),
+        @SerializedName("import")  IMPORT("import"),
+        @SerializedName("auth")    AUTH("auth"),
+        @SerializedName("remote_sync") REMOTE_SYNC("remote_sync"),
     }
 
     // --- Message Types ---
@@ -153,5 +157,16 @@ object IpcProtocol {
         fun rollback(duration: String): Map<String, Any?> = mapOf("duration" to duration)
 
         fun forecast(): Map<String, Any?> = emptyMap<String, Any?>()
+
+        fun auth(token: String): Map<String, Any?> = mapOf("token" to token)
+
+        fun export(path: String): Map<String, Any?> = mapOf("path" to path)
+
+        fun import(path: String): Map<String, Any?> = mapOf("path" to path)
+
+        fun remoteSync(action: String, snapshotId: String? = null): Map<String, Any?> = mapOf(
+            "action" to action,
+            "snapshot_id" to snapshotId
+        )
     }
 }

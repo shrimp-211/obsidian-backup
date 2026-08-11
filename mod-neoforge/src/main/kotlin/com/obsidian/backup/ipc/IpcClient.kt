@@ -57,8 +57,32 @@ class IpcClient(private val config: ModConfig) {
             reader = BufferedReader(InputStreamReader(Channels.newInputStream(channel)))
 
             connected.set(true)
-            ObsidianBackupMod.LOGGER.info("[IPC] Connected to Sidecar at {}", config.sidecarSocketPath)
 
+            // Authentication handshake: the Sidecar requires the first message
+            // on a connection to be an AUTH request with a valid token,
+            // otherwise it drops the connection.
+            val authRequest = IpcProtocol.Request(
+                op = IpcProtocol.OpCode.AUTH.code,
+                params = IpcProtocol.Params.auth(config.sidecarToken)
+            )
+            val authJson = IpcProtocol.toJson(authRequest)
+            synchronized(writer!!) {
+                writer!!.write(authJson)
+                writer!!.newLine()
+                writer!!.flush()
+            }
+            val authLine = reader!!.readLine()
+            val authResponse = if (authLine != null) IpcProtocol.parseResponse(authLine) else null
+            if (authResponse?.status != "ok") {
+                ObsidianBackupMod.LOGGER.error(
+                    "[IPC] Authentication failed: {}",
+                    authResponse?.message ?: "no response"
+                )
+                disconnect()
+                return false
+            }
+
+            ObsidianBackupMod.LOGGER.info("[IPC] Connected to Sidecar at {}", config.sidecarSocketPath)
             startReadLoop()
             true
         } catch (e: Exception) {

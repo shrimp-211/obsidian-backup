@@ -9,7 +9,7 @@
     "homepage": "https://github.com/shrimp-211/obsidian-backup",
     "sources": "https://github.com/shrimp-211/obsidian-backup"
   },
-  "license": "MIT",
+  "license": "MPL-2.0",
   "environment": "server",
   "entrypoints": {
     "server": ["com.obsidian.backup.fabric.ObsidianBackupFabric"]

@@ -9,6 +9,7 @@ import com.obsidian.backup.ObsidianBackupMod
  */
 data class ModConfig(
     val sidecarSocketPath: String = ".obsidian/ipc/obsidian.sock",
+    val sidecarToken: String = "obsidian-default-token",
     val sidecarConnectTimeoutMs: Long = 5000,
     val sidecarRequestTimeoutMs: Long = 30000,
     val enableBossBarProgress: Boolean = true,
@@ -31,6 +32,7 @@ data class ModConfig(
     companion object {
         fun load(): ModConfig {
             val socketPath = System.getProperty("obsidian.socket", ".obsidian/ipc/obsidian.sock")
+            val token = System.getProperty("obsidian.token", "obsidian-default-token")
             val connectTimeout = System.getProperty("obsidian.connect_timeout", "5000").toLong()
             val requestTimeout = System.getProperty("obsidian.request_timeout", "30000").toLong()
 
@@ -38,6 +40,7 @@ data class ModConfig(
 
             return ModConfig(
                 sidecarSocketPath = socketPath,
+                sidecarToken = token,
                 sidecarConnectTimeoutMs = connectTimeout,
                 sidecarRequestTimeoutMs = requestTimeout
             )

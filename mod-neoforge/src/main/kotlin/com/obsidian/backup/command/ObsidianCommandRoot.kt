@@ -55,6 +55,7 @@ object ObsidianCommandRoot {
             .then(verifyCommand())
             .then(pinCommand())
             .then(snapshotCommand())
+            .then(remoteSyncCommand())
 
         dispatcher.register(root)
     }
@@ -668,7 +669,7 @@ object ObsidianCommandRoot {
         val mod = ObsidianBackupMod.instance
         val source = ctx.source
         source.sendSystemMessage(ChatRenderer().info("正在导出快照归档到 $path ..."))
-        mod.ipcClient.sendRequest(IpcProtocol.OpCode.BACKUP, mapOf("export_path" to path)) { response ->
+        mod.ipcClient.sendRequest(IpcProtocol.OpCode.EXPORT, IpcProtocol.Params.export(path)) { response ->
             if (response.status == "ok") {
                 source.sendSystemMessage(ChatRenderer().success("快照归档已导出至 $path"))
             } else {
@@ -682,11 +683,75 @@ object ObsidianCommandRoot {
         val mod = ObsidianBackupMod.instance
         val source = ctx.source
         source.sendSystemMessage(ChatRenderer().info("正在从 $path 导入快照归档..."))
-        mod.ipcClient.sendRequest(IpcProtocol.OpCode.BACKUP, mapOf("import_path" to path)) { response ->
+        mod.ipcClient.sendRequest(IpcProtocol.OpCode.IMPORT, IpcProtocol.Params.import(path)) { response ->
             if (response.status == "ok") {
                 source.sendSystemMessage(ChatRenderer().success("快照归档已从 $path 导入"))
             } else {
                 source.sendSystemMessage(ChatRenderer().error("导入失败: ${response.message}"))
+            }
+        }
+        return 1
+    }
+
+    // =========================================================================
+    // /obsidian remote-sync push|pull <snapshot_id> | serve
+    // 远程同步：MC 服务端与备份服务端之间互传快照。
+    // 两端均可作为主动发送方——拥有公网 IP 的一方运行 serve（监听），
+    // 另一方执行 push / pull（主动连接）。
+    // =========================================================================
+    private fun remoteSyncCommand(): LiteralArgumentBuilder<CommandSourceStack> {
+        return Commands.literal("remote-sync")
+            .then(
+                Commands.literal("push")
+                    .then(Commands.argument("snapshot_id", StringArgumentType.string())
+                        .executes { ctx ->
+                            val sid = StringArgumentType.getString(ctx, "snapshot_id")
+                            executeRemoteSync(ctx, "push", sid)
+                        }
+                    )
+            )
+            .then(
+                Commands.literal("pull")
+                    .then(Commands.argument("snapshot_id", StringArgumentType.string())
+                        .executes { ctx ->
+                            val sid = StringArgumentType.getString(ctx, "snapshot_id")
+                            executeRemoteSync(ctx, "pull", sid)
+                        }
+                    )
+            )
+            .then(
+                Commands.literal("serve")
+                    .executes { ctx ->
+                        executeRemoteSync(ctx, "serve", "")
+                    }
+            )
+    }
+
+    private fun executeRemoteSync(
+        ctx: CommandContext<CommandSourceStack>,
+        action: String,
+        snapshotId: String
+    ): Int {
+        val mod = ObsidianBackupMod.instance
+        val source = ctx.source
+
+        val desc = when (action) {
+            "push" -> "将快照 $snapshotId 推送到远程备份节点"
+            "pull" -> "从远程备份节点拉取快照 $snapshotId"
+            else -> "启动远程同步监听（公网 IP 一侧）"
+        }
+        source.sendSystemMessage(ChatRenderer().info("🔁 远程同步: $desc ..."))
+
+        mod.ipcClient.sendRequest(
+            op = IpcProtocol.OpCode.REMOTE_SYNC,
+            params = IpcProtocol.Params.remoteSync(action, snapshotId.ifEmpty { null })
+        ) { response ->
+            if (response.status == "ok") {
+                source.sendSystemMessage(ChatRenderer().success(
+                    "远程同步完成: ${response.message ?: action}"
+                ))
+            } else {
+                source.sendSystemMessage(ChatRenderer().error("远程同步失败: ${response.message}"))
             }
         }
         return 1
