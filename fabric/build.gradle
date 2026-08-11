@@ -6,7 +6,7 @@ plugins {
 // Apply multi-version configuration
 apply from: rootProject.file('versions.gradle')
 def v = versions()
-def mcVersion = (findProperty('mc') ?: '1.21.1') as String
+def mcVersion = project.mc
 
 version = "${mcVersion}-${rootProject.mod_version}"
 group = 'com.obsidian.backup'

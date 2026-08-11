@@ -3,9 +3,9 @@ plugins {
     id 'maven-publish'
 }
 
-// Target Java 17 — lowest common denominator for 1.20.1/1.21.1
-// Common module contains no MC-version-specific code, so using the
-// minimum Java version ensures bytecode compatibility with all targets.
+// The common module contains no MC-version-specific code. The bytecode target
+// follows the active version matrix (v.java_version): release 21 when building
+// 1.21.1, release 17 when building 1.20.1 — always matching the loaders.
 apply from: rootProject.file('versions.gradle')
 def v = versions()
 
