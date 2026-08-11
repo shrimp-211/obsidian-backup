@@ -1,9 +1,13 @@
+// NOTE: NeoForge module supports Minecraft 1.21.1 only (Kotlin implementation).
+// It intentionally does NOT apply versions.gradle — the version matrix targets
+// the shared Java loaders; NeoForge 1.20.1 has no supported release.
 plugins {
     id 'java-library'
     id 'eclipse'
     id 'idea'
     id 'maven-publish'
     id 'net.neoforged.gradle.userdev' version '7.0.142'
+    id 'org.jetbrains.kotlin.jvm' version '1.9.24'
 }
 
 version = "${minecraft_version}-${mod_version}"
@@ -20,12 +24,16 @@ java {
     withSourcesJar()
 }
 
-// Configure source sets for the common/api module
+// Configure source sets for the Kotlin implementation
 sourceSets {
     main {
-        java { srcDirs = ['src/main/kotlin'] }
+        kotlin { srcDirs = ['src/main/kotlin'] }
         resources { srcDirs = ['src/main/resources'] }
     }
+}
+
+kotlin {
+    jvmToolchain(21)
 }
 
 repositories {
@@ -37,6 +45,9 @@ repositories {
 
 dependencies {
     implementation "net.neoforged:neoforge:${neo_version}"
+
+    // Kotlin standard library for the NeoForge mod implementation
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.24"
 
     // Unix Domain Socket support (Java 16+ native, but JNR for older compat)
     implementation 'com.github.jnr:jnr-unixsocket:0.38.23'

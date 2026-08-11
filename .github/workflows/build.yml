@@ -7,40 +7,6 @@ on:
     branches: [master, main]
 
 jobs:
-  # Rust Sidecar + CLI
-  rust:
-    name: Rust ${{ matrix.package }}
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        package: [sidecar, client-cli]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
-        run: rustup update stable
-
-      - name: Cache cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ matrix.package }}-${{ hashFiles(format('{0}/Cargo.lock', matrix.package)) }}
-
-      - name: Build ${{ matrix.package }}
-        run: cargo build --locked
-        working-directory: ${{ matrix.package }}
-
-      - name: Test ${{ matrix.package }}
-        run: cargo test
-        working-directory: ${{ matrix.package }}
-
-      - name: Clippy ${{ matrix.package }}
-        run: cargo clippy -- -D warnings
-        working-directory: ${{ matrix.package }}
-
   # Java multi-version multi-loader
   java:
     name: Java ${{ matrix.mc }} (${{ matrix.loader }})

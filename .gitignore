@@ -1,7 +1,3 @@
-# Rust
-sidecar/target/
-client-cli/target/
-
 # Gradle (all modules)
 .gradle/
 **/build/
