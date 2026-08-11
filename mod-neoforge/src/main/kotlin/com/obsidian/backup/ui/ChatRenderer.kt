@@ -174,7 +174,7 @@ class ChatRenderer {
         return listOf(
             statusHeader(),
             Component.literal(""),
-            statusRunning(status.running, status.currentTx),
+            statusRunning(status.running, status.current_tx),
             adaptiveLevel(status.tps, status.state != "idle"),
             Component.literal(""),
             queueStatus(status.queue_status),
