@@ -119,7 +119,7 @@ public class IpcClient implements AutoCloseable {
                         }
                         if (line.isBlank()) continue;
                         responseQueue.add(line);
-                    } catch (InterruptedException | ClosedChannelException e) {
+                    } catch (IOException e) {
                         break;
                     } catch (Exception e) {
                         if (connected.get()) logger.error("[IPC] Read error: {}", e.getMessage());

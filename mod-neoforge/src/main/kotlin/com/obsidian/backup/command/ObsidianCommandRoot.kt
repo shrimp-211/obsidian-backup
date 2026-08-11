@@ -255,7 +255,6 @@ object ObsidianCommandRoot {
             op = IpcProtocol.OpCode.BACKUP,
             params = IpcProtocol.Params.backup(
                 tag = tag,
-                worldPath = server.getWorldPath(server.overworld()).toString(),
                 incremental = incremental
             )
         ) { response ->
