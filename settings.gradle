@@ -36,4 +36,5 @@ include 'bukkit'
 gradle.beforeProject { project ->
     project.ext.common_version = '0.2.0'
     project.ext.mod_version = '0.2.0'
+    project.ext.mc = (project.findProperty('mc') ?: '1.21.1') as String
 }
