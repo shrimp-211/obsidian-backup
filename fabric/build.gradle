@@ -6,12 +6,13 @@ plugins {
 // Apply multi-version configuration
 apply from: rootProject.file('versions.gradle')
 def v = versions()
+def mcVersion = (findProperty('mc') ?: '1.21.1') as String
 
-version = "${ext.mc}-${rootProject.mod_version}"
+version = "${mcVersion}-${rootProject.mod_version}"
 group = 'com.obsidian.backup'
 
 base {
-    archivesName = "obsidian-backup-fabric-${ext.mc}"
+    archivesName = "obsidian-backup-fabric-${mcVersion}"
 }
 
 loom {
