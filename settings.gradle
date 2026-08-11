@@ -31,9 +31,9 @@ include 'forge'
 // Paper/Bukkit (supports 1.21.1 and 1.20.1)
 include 'bukkit'
 
-// Global version constants — exposed on the root project so subprojects
-// can read them via `rootProject.mod_version` / `rootProject.common_version`.
-rootProject.ext {
-    common_version = '0.2.0'
-    mod_version = '0.2.0'
+// Global version constants — injected into every project so subprojects can
+// read them via `rootProject.mod_version` / `project.common_version`.
+gradle.beforeProject { project ->
+    project.ext.common_version = '0.2.0'
+    project.ext.mod_version = '0.2.0'
 }
