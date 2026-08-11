@@ -572,7 +572,7 @@ object ObsidianCommandRoot {
         val source = ctx.source
 
         val action = if (repair) "巡检并修复" else "巡检"
-        source.sendSystemMessage(ChatRenderer().info("🔍 正在$action整仓快照完整性..."))
+        source.sendSystemMessage(ChatRenderer().info("🔍 正在${action}整仓快照完整性..."))
 
         mod.ipcClient.sendRequest(
             op = IpcProtocol.OpCode.VERIFY,

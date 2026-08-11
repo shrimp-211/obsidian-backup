@@ -38,6 +38,9 @@ tasks.withType(JavaCompile).configureEach {
 
 // Bundle the common library into the plugin jar (fat-JAR approach)
 jar {
+    // Common jar is an input (via runtimeClasspath) — declare the task dependency
+    // so Gradle 8 orders the build correctly.
+    dependsOn(':common:jar')
     from {
         configurations.runtimeClasspath.collect {
             it.isDirectory() ? it : zipTree(it)
