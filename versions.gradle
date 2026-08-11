@@ -9,7 +9,8 @@
  */
 
 ext {
-    mc = project.hasProperty('mc') ? project.mc : '1.21.1'
+    // findProperty never throws — falls back to 1.21.1 when -Pmc is absent.
+    mc = (findProperty('mc') ?: '1.21.1') as String
 }
 
 // Helper: resolve version for the current MC target
