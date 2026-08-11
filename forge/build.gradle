@@ -45,7 +45,7 @@ repositories {
 }
 
 dependencies {
-    minecraft "net.minecraftforge:forge:${ext.mc}-${v.forge_version}"
+    minecraft "net.minecraftforge:forge:${mcVersion}-${v.forge_version}"
 
     implementation project(':common')
 

@@ -31,7 +31,7 @@ repositories {
 }
 
 dependencies {
-    minecraft "com.mojang:minecraft:${ext.mc}"
+    minecraft "com.mojang:minecraft:${mcVersion}"
     mappings loom.officialMojangMappings()
 
     modImplementation "net.fabricmc:fabric-loader:${v.fabric_loader}"
