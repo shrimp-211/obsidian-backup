@@ -48,6 +48,11 @@ Obsidian Sidecar (Rust, 独立仓库 obsidian-backup_server)
 | Fabric | 1.21.1 / 1.20.1 | 核心子集 |
 | Forge | 1.21.1 / 1.20.1 | 核心子集 |
 | Paper/Bukkit | 1.21.1 / 1.20.1 | 核心子集 |
+| MCDR 插件 | 任意（独立进程） | 全功能（`!!backup` 系列，见 `mcdr/`） |
+
+> **Minecraft 26.2**（2026 新命名体系，需 Java 25）的完整适配要求 Gradle 9 工具链。
+> 当前 ForgeGradle 6 尚不支持 Gradle 9，因此 26.2 暂列入规划（`versions.gradle` 已备好
+> fabric-api `0.157.0+26.2` / neoforge `26.2.0.59` / forge `65.1.1` / paper `26.2.build.112-stable`）。
 
 ## 🚀 快速开始
 
