@@ -16,11 +16,6 @@ jobs:
       matrix:
         mc: ['1.21.1', '1.20.1']
         loader: [fabric, forge, bukkit]
-        exclude:
-          # NeoForge is 1.21.1 only
-          - mc: '1.20.1'
-            loader: forge
-            # Forge 1.20.1 uses different plugin, only test Fabric + Bukkit
 
     steps:
       - uses: actions/checkout@v4
@@ -55,3 +50,22 @@ jobs:
 
       - name: Build common
         run: ./gradlew :common:build --no-daemon
+
+  # NeoForge module (Kotlin implementation, 1.21.1 only)
+  neoforge:
+    name: NeoForge 1.21.1
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build neoforge
+        run: ./gradlew :neoforge:build --no-daemon
