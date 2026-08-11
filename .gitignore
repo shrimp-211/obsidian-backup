@@ -21,3 +21,7 @@ Thumbs.db
 .obsidian/rocksdb/
 .obsidian/sandbox/
 .claude/
+
+# Python
+**/__pycache__/
+*.pyc
