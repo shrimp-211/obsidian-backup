@@ -1,0 +1,10 @@
+{
+    "sidecar_socket": ".obsidian/ipc/obsidian.sock",
+    "sidecar_token": "obsidian-default-token",
+    "request_timeout_seconds": 60,
+    "auto_backup_enabled": true,
+    "auto_backup_interval_minutes": 30,
+    "auto_backup_tag_prefix": "auto",
+    "auto_backup_keep": 10,
+    "notify_ops_only": false
+}

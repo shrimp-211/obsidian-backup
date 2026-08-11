@@ -1,0 +1,11 @@
+{
+    "id": "mcdr_backup",
+    "version": "0.1.0",
+    "name": "Obsidian Backup",
+    "description": "MCDReforged plugin — enterprise CAS incremental backup for Minecraft servers. Bridges to the Obsidian Sidecar daemon via UDS IPC: backup/restore/status/verify/forecast/remote-sync/auto-backup.",
+    "author": "ObsidianTeam",
+    "link": "https://github.com/shrimp-211/obsidian-backup",
+    "dependencies": {},
+    "entrypoint": "mcdr_backup",
+    "archive_name": "mcdr_backup_v{version}.mcdr"
+}
