@@ -18,14 +18,15 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      # 26.2 requires Java 25 + Gradle 9 (loom 1.14+) — pending tooling.
-      # 1.20.1 / 1.21.1 / 1.21.11 are covered (loom 1.13.3 + Gradle 8.14).
+      # Gradle 9 + loom 1.17 supports 1.20.1 → 26.2. ForgeGradle 6.0.54 is
+      # built on Gradle 9.2 so forge works; neoforge 26.2 is excluded below
+      # (neogradle has no Gradle 9 release yet).
       matrix:
-        mc: ['1.21.1', '1.20.1', '1.21.11']
+        mc: ['1.21.1', '1.20.1', '1.21.11', '26.2']
         loader: [fabric, forge, bukkit]
         exclude:
-          # forge 61 (MC 1.21.11) needs ForgeGradle 7 (not yet released).
-          # ForgeGradle 6.0.54 cannot generate official mappings for it.
+          # forge 61 (MC 1.21.11) — ForgeGradle 6.0.54 cannot generate its
+          # official mappings (needs a newer ForgeGradle).
           - mc: '1.21.11'
             loader: forge
 
@@ -36,9 +37,9 @@ jobs:
         uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          # loom 1.13+ needs Java 21 to run; bytecode release is controlled
+          # Java 25 daemon (26.2 needs it); bytecode release is controlled
           # per-module via options.release / java.toolchain in versions.gradle.
-          java-version: 21
+          java-version: 25
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -57,7 +58,7 @@ jobs:
         uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: 21
+          java-version: 25
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -66,6 +67,7 @@ jobs:
         run: ./gradlew :common:build --no-daemon
 
   # NeoForge module (Kotlin implementation; -Pmc switches 1.21.1/1.21.11/26.2)
+  # NOTE: 26.2 excluded — neogradle 7.1.38 has no Gradle 9 release yet.
   neoforge:
     name: NeoForge ${{ matrix.mc }}
     runs-on: ubuntu-latest
@@ -80,7 +82,7 @@ jobs:
         uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: 21
+          java-version: 25
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4

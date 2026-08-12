@@ -1,7 +1,6 @@
 plugins {
-    // loom 1.13.x is the latest line compatible with Gradle 8.14 (1.14+ needs
-    // Gradle 9). It supports 1.20.1 → 1.21.11 and needs a Java 21 daemon.
-    id 'fabric-loom' version '1.13.3'
+    // loom 1.17 supports 1.20.1 → 26.2 and needs Gradle 9 + Java 25 toolchain.
+    id 'fabric-loom' version '1.17.19'
     id 'maven-publish'
 }
 
@@ -14,8 +13,11 @@ version = "${mcVersion}-${rootProject.mod_version}"
 group = 'com.obsidian.backup'
 
 // Version-specific source dir for the McCompat shim (selected by -Pmc).
-// 1.20.1 reuses the 1.21.1 shim — both use the legacy hasPermission(int) API.
-def compatVersion = (mcVersion == '1.20.1') ? '1.21.1' : mcVersion
+// 1.20.1 reuses 1.21.1 (legacy hasPermission(int)); 26.2 reuses 1.21.11
+// (Permission object system introduced in MC 1.21.2+).
+def compatVersion = mcVersion
+if (mcVersion == '1.20.1') compatVersion = '1.21.1'
+if (mcVersion == '26.2') compatVersion = '1.21.11'
 def mcCompatDir = "src/mc-${compatVersion}/java"
 sourceSets {
     main {

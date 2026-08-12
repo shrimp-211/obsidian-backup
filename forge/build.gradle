@@ -14,8 +14,10 @@ version = "${mcVersion}-${rootProject.mod_version}"
 group = 'com.obsidian.backup'
 
 // Version-specific source dir for the McCompat shim (selected by -Pmc).
-// 1.20.1 reuses the 1.21.1 shim — both use the legacy hasPermission(int) API.
-def compatVersion = (mcVersion == '1.20.1') ? '1.21.1' : mcVersion
+// 1.20.1 reuses 1.21.1; 26.2 reuses 1.21.11 (Permission object system).
+def compatVersion = mcVersion
+if (mcVersion == '1.20.1') compatVersion = '1.21.1'
+if (mcVersion == '26.2') compatVersion = '1.21.11'
 def mcCompatDir = "src/mc-${compatVersion}/java"
 sourceSets {
     main {

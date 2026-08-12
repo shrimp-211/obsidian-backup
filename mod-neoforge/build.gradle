@@ -40,9 +40,11 @@ java {
 
 // Configure source sets for the Kotlin implementation.
 // Shared code lives in src/main/kotlin; the McCompat version shim is selected
-// from src/mc-<version>/kotlin based on -Pmc. 1.20.1 reuses 1.21.1 (NeoForge
-// has no 1.20.1 release, but the shim source is harmless to keep consistent).
-def compatVersion = (mcVersion == '1.20.1') ? '1.21.1' : mcVersion
+// from src/mc-<version>/kotlin based on -Pmc. 1.20.1 reuses 1.21.1; 26.2
+// reuses 1.21.11 (Permission object system).
+def compatVersion = mcVersion
+if (mcVersion == '1.20.1') compatVersion = '1.21.1'
+if (mcVersion == '26.2') compatVersion = '1.21.11'
 def mcCompatDir = "src/mc-${compatVersion}/kotlin"
 sourceSets {
     main {
