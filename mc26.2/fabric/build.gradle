@@ -5,9 +5,7 @@
 // main project's Fabric source (../fabric) + the 1.21.11 McCompat shim.
 
 plugins {
-    // 1.17-SNAPSHOT is the official Fabric template version for MC 26.x:
-    // it supports the no-mappings build (26.x is not obfuscated).
-    id 'fabric-loom' version '1.17-SNAPSHOT'
+    id 'fabric-loom' version '1.18.0-alpha.15'
     id 'maven-publish'
 }
 
