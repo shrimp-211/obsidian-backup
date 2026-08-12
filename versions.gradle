@@ -38,6 +38,17 @@ ext.versions = { ->
             v.parchment = '1.20.1-2023.09.03'
             break
 
+        case '1.21.11':
+            // Minecraft 1.21.11 — the latest 1.21.x line, still Java 21
+            v.fabric_loader = '0.19.3'
+            v.fabric_api = '0.141.6+1.21.11'
+            v.forge_version = '61.2.0'
+            v.neoforge_version = '21.11.45'
+            v.paper_api = '1.21.11-R0.1-SNAPSHOT'
+            v.java_version = 21
+            v.parchment = null
+            break
+
         case '26.2':
             // Minecraft 26.2 (2026 naming scheme) — requires Java 25
             v.fabric_loader = '0.19.3'
