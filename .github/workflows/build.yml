@@ -23,6 +23,11 @@ jobs:
       matrix:
         mc: ['1.21.1', '1.20.1', '1.21.11']
         loader: [fabric, forge, bukkit]
+        exclude:
+          # forge 61 (MC 1.21.11) needs ForgeGradle 7 (not yet released).
+          # ForgeGradle 6.0.54 cannot generate official mappings for it.
+          - mc: '1.21.11'
+            loader: forge
 
     steps:
       - uses: actions/checkout@v4
