@@ -18,9 +18,13 @@ rootProject.name = 'obsidian-backup-parent'
 // Shared library — version-independent, loader-independent
 include 'common'
 
-// NeoForge (original Kotlin mod, 1.21.1 only)
-include 'neoforge'
-project(':neoforge').projectDir = file('mod-neoforge')
+// NeoForge (Kotlin mod) — supports 1.21.1 / 1.21.11 / 26.2. Minecraft 1.20.1
+// has no NeoForge release, so exclude it from the project graph for 1.20.1.
+def activeMc = (findProperty('mc') ?: '1.21.1') as String
+if (activeMc != '1.20.1') {
+    include 'neoforge'
+    project(':neoforge').projectDir = file('mod-neoforge')
+}
 
 // Fabric (supports 1.21.1 and 1.20.1 via -Pmc=1.20.1)
 include 'fabric'
