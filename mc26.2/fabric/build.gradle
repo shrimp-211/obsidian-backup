@@ -1,12 +1,9 @@
-// Fabric 26.2 (Gradle 9 standalone build).
-//
-// IMPORTANT: Minecraft 26.x no longer ships obfuscated→named mappings, so
-// Fabric's loom 1.17 template omits the `mappings` block entirely. Reuses the
-// main project's Fabric source (../fabric) + the 1.21.11 McCompat shim.
+// Fabric 26.2 (Gradle 9 standalone build) — aligned with the official
+// Fabric example-mod template (MC 26.x needs no mappings block).
 
 plugins {
-    id 'fabric-loom' version '1.18.0-alpha.15'
-    id 'maven-publish'
+	id 'net.fabricmc.fabric-loom' version '1.17-SNAPSHOT'
+	id 'maven-publish'
 }
 
 apply from: rootProject.file('versions.gradle')
@@ -16,58 +13,60 @@ version = "26.2-${rootProject.mod_version}"
 group = 'com.obsidian.backup'
 
 base {
-    archivesName = 'obsidian-backup-fabric-26.2'
+	archivesName = 'obsidian-backup-fabric-26.2'
 }
 
 java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(25)
-    }
-    withSourcesJar()
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(25)
+	}
+	withSourcesJar()
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
 }
 
 // Reuse the main project's source (shared implementation + version shim).
 sourceSets {
-    main {
-        java {
-            srcDirs = [
-                rootProject.file('../fabric/src/main/java'),
-                rootProject.file('../fabric/src/mc-1.21.11/java'),
-            ]
-        }
-        resources {
-            srcDirs = [rootProject.file('../fabric/src/main/resources')]
-        }
-    }
+	main {
+		java {
+			srcDirs = [
+				rootProject.file('../fabric/src/main/java'),
+				rootProject.file('../fabric/src/mc-1.21.11/java'),
+			]
+		}
+		resources {
+			srcDirs = [rootProject.file('../fabric/src/main/resources')]
+		}
+	}
 }
 
 loom {
-    runs {
-        server {
-            server()
-            ideConfigGenerated(true)
-        }
-    }
+	splitEnvironmentSourceSets()
+
+	mods {
+		obsidian_backup {
+			sourceSet sourceSets.main
+		}
+	}
 }
 
 repositories {
-    mavenCentral()
-    maven { url = 'https://maven.fabricmc.net/' }
+	mavenCentral()
 }
 
 dependencies {
-    minecraft "com.mojang:minecraft:26.2"
-    // No mappings block — MC 26.x is not obfuscated.
+	minecraft "com.mojang:minecraft:26.2"
+	// No mappings block — MC 26.x is not obfuscated.
 
-    modImplementation "net.fabricmc:fabric-loader:${v.fabric_loader}"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${v.fabric_api}"
+	modImplementation "net.fabricmc:fabric-loader:${v.fabric_loader}"
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${v.fabric_api}"
 
-    // Shared library (IPC protocol + cross-platform Named Pipe support)
-    implementation project(':common')
-    include project(':common')
+	// Shared library (IPC protocol + cross-platform Named Pipe support)
+	implementation project(':common')
+	include project(':common')
 }
 
 tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8'
-    options.release = 25
+	options.encoding = 'UTF-8'
+	options.release = 25
 }
