@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [master, main, develop]
 
+# Cancel superseded runs — full multi-loader builds are slow.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # Java multi-version multi-loader
   java:
