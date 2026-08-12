@@ -52,8 +52,8 @@ class IpcClient(private val config: ModConfig) {
             if (isWindows()) {
                 // Windows: named pipe (Java UDS is Unix-only).
                 pipe = NamedPipe.open(config.sidecarSocketPath)
-                writer = BufferedWriter(OutputStreamWriter(pipe!!.out))
-                reader = BufferedReader(InputStreamReader(pipe!!.in))
+                writer = BufferedWriter(OutputStreamWriter(pipe!!.output))
+                reader = BufferedReader(InputStreamReader(pipe!!.input))
             } else {
                 val socketPath = Path.of(config.sidecarSocketPath)
                 val address = UnixDomainSocketAddress.of(socketPath)

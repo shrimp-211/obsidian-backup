@@ -52,8 +52,8 @@ public class IpcClient implements AutoCloseable {
             if (isWindows()) {
                 // Windows: named pipe (Java UDS is Unix-only).
                 pipe = NamedPipe.open(socketPath);
-                writer = new BufferedWriter(new OutputStreamWriter(pipe.out));
-                reader = new BufferedReader(new InputStreamReader(pipe.in));
+                writer = new BufferedWriter(new OutputStreamWriter(pipe.output));
+                reader = new BufferedReader(new InputStreamReader(pipe.input));
             } else {
                 var address = UnixDomainSocketAddress.of(Path.of(socketPath));
                 channel = SocketChannel.open(address);

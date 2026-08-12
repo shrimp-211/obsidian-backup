@@ -54,21 +54,21 @@ public final class NamedPipe {
     }
 
     public static final class PipeConnection implements AutoCloseable {
-        public final InputStream in;
-        public final OutputStream out;
+        public final InputStream input;
+        public final OutputStream output;
         private boolean closed = false;
 
-        PipeConnection(InputStream in, OutputStream out) {
-            this.in = in;
-            this.out = out;
+        PipeConnection(InputStream input, OutputStream output) {
+            this.input = input;
+            this.output = output;
         }
 
         @Override
         public void close() {
             if (!closed) {
                 closed = true;
-                try { in.close(); } catch (IOException ignored) {}
-                try { out.close(); } catch (IOException ignored) {}
+                try { input.close(); } catch (IOException ignored) {}
+                try { output.close(); } catch (IOException ignored) {}
             }
         }
     }
