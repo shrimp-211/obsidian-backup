@@ -1,6 +1,15 @@
 // NeoForge module (Kotlin implementation).
 // Supports multiple MC versions via -Pmc: 1.21.1, 1.21.11, 26.2.
 // Minecraft 1.20.1 is NOT supported by NeoForge (no release exists).
+plugins {
+    id 'java-library'
+    id 'eclipse'
+    id 'idea'
+    id 'maven-publish'
+    id 'net.neoforged.gradle.userdev' version '7.1.38'
+    id 'org.jetbrains.kotlin.jvm' version '1.9.24'
+}
+
 apply from: rootProject.file('versions.gradle')
 def v = versions()
 
@@ -10,15 +19,6 @@ if (neoVersion == null) {
     throw new GradleException("NeoForge does not support Minecraft ${mcVersion}")
 }
 def javaTarget = v.java_version
-
-plugins {
-    id 'java-library'
-    id 'eclipse'
-    id 'idea'
-    id 'maven-publish'
-    id 'net.neoforged.gradle.userdev' version '7.1.38'
-    id 'org.jetbrains.kotlin.jvm' version '1.9.24'
-}
 
 version = "${mcVersion}-${rootProject.mod_version}"
 group = 'com.obsidian.backup'
