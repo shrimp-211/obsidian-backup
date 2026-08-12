@@ -18,8 +18,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      # NOTE: newer MC lines (1.21.11 / 26.2) require Gradle 9 (loom 1.15+,
+      # Java 25). ForgeGradle 6 does not yet support Gradle 9, so those are
+      # pending tooling. 1.20.1 / 1.21.1 are fully covered here.
       matrix:
-        mc: ['1.21.1', '1.20.1', '1.21.11']
+        mc: ['1.21.1', '1.20.1']
         loader: [fabric, forge, bukkit]
 
     steps:
@@ -29,9 +32,7 @@ jobs:
         uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          # Build with Java 21 for all 1.21.x targets (release follows
-          # v.java_version in versions.gradle: 17 for 1.20.1).
-          java-version: 21
+          java-version: ${{ matrix.mc == '1.21.1' && '21' || '17' }}
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -58,9 +59,9 @@ jobs:
       - name: Build common
         run: ./gradlew :common:build --no-daemon
 
-  # NeoForge module (Kotlin implementation, 1.21.x only)
+  # NeoForge module (Kotlin implementation; -Pmc switches 1.21.1/1.21.11/26.2)
   neoforge:
-    name: NeoForge 1.21.11
+    name: NeoForge 1.21.1
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
