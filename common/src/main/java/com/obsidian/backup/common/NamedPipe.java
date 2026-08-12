@@ -18,12 +18,12 @@ import java.io.OutputStream;
  * into plain {@link InputStream} / {@link OutputStream} streams so the rest of
  * {@link IpcClient} stays transport-agnostic.
  */
-final class NamedPipe {
+public final class NamedPipe {
 
     private NamedPipe() {}
 
     /** Open a named pipe and return its read/write streams. */
-    static PipeConnection open(String logicalName) throws IOException {
+    public static PipeConnection open(String logicalName) throws IOException {
         String pipeName = "\\\\.\\pipe\\" + sanitize(logicalName);
         WinNT.HANDLE handle = Kernel32.INSTANCE.CreateFile(
             pipeName,
@@ -53,9 +53,9 @@ final class NamedPipe {
         return sb.toString();
     }
 
-    static final class PipeConnection implements AutoCloseable {
-        final InputStream in;
-        final OutputStream out;
+    public static final class PipeConnection implements AutoCloseable {
+        public final InputStream in;
+        public final OutputStream out;
         private boolean closed = false;
 
         PipeConnection(InputStream in, OutputStream out) {
