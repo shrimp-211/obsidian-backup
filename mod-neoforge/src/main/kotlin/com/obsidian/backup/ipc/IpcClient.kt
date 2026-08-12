@@ -2,6 +2,7 @@ package com.obsidian.backup.ipc
 
 import com.obsidian.backup.config.ModConfig
 import com.obsidian.backup.ObsidianBackupMod
+import com.obsidian.backup.common.NamedPipe
 import net.minecraft.network.chat.Component
 import java.io.BufferedReader
 import java.io.BufferedWriter
@@ -28,6 +29,7 @@ import java.util.function.Consumer
 class IpcClient(private val config: ModConfig) {
 
     private var channel: SocketChannel? = null
+    private var pipe: NamedPipe.PipeConnection? = null
     private var writer: BufferedWriter? = null
     private var reader: BufferedReader? = null
 
@@ -47,14 +49,20 @@ class IpcClient(private val config: ModConfig) {
         if (isConnected()) return true
 
         return try {
-            val socketPath = Path.of(config.sidecarSocketPath)
-            val address = UnixDomainSocketAddress.of(socketPath)
-            channel = SocketChannel.open(address).apply {
-                configureBlocking(true)
+            if (isWindows()) {
+                // Windows: named pipe (Java UDS is Unix-only).
+                pipe = NamedPipe.open(config.sidecarSocketPath)
+                writer = BufferedWriter(OutputStreamWriter(pipe!!.out))
+                reader = BufferedReader(InputStreamReader(pipe!!.in))
+            } else {
+                val socketPath = Path.of(config.sidecarSocketPath)
+                val address = UnixDomainSocketAddress.of(socketPath)
+                channel = SocketChannel.open(address).apply {
+                    configureBlocking(true)
+                }
+                writer = BufferedWriter(OutputStreamWriter(Channels.newOutputStream(channel)))
+                reader = BufferedReader(InputStreamReader(Channels.newInputStream(channel)))
             }
-
-            writer = BufferedWriter(OutputStreamWriter(Channels.newOutputStream(channel)))
-            reader = BufferedReader(InputStreamReader(Channels.newInputStream(channel)))
 
             connected.set(true)
 
@@ -117,12 +125,14 @@ class IpcClient(private val config: ModConfig) {
             writer?.close()
             reader?.close()
             channel?.close()
+            pipe?.close()
         } catch (_: Exception) {
             // Best-effort cleanup
         }
         writer = null
         reader = null
         channel = null
+        pipe = null
         ObsidianBackupMod.LOGGER.info("[IPC] Disconnected from Sidecar")
     }
 
@@ -248,4 +258,7 @@ class IpcClient(private val config: ModConfig) {
     }
 
     fun isConnected(): Boolean = connected.get()
+
+    private fun isWindows(): Boolean =
+        System.getProperty("os.name", "").lowercase().contains("win")
 }

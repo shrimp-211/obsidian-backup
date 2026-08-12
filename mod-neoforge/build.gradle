@@ -68,6 +68,9 @@ dependencies {
     // Kotlin standard library for the NeoForge mod implementation
     implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.24"
 
+    // Shared library (IPC protocol + cross-platform Named Pipe support)
+    implementation project(':common')
+
     // Unix Domain Socket support (Java 16+ native, but JNR for older compat)
     implementation 'com.github.jnr:jnr-unixsocket:0.38.23'
 
