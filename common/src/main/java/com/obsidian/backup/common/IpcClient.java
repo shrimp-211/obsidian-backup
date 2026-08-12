@@ -20,7 +20,8 @@ public class IpcClient implements AutoCloseable {
 
     private final String socketPath;
     private final String authToken;
-    private SocketChannel channel;
+    private SocketChannel channel;              // Unix-only
+    private NamedPipe.PipeConnection pipe;      // Windows-only
     private BufferedWriter writer;
     private BufferedReader reader;
     private final AtomicBoolean connected = new AtomicBoolean(false);
@@ -48,12 +49,18 @@ public class IpcClient implements AutoCloseable {
         if (isConnected()) return true;
 
         try {
-            var address = UnixDomainSocketAddress.of(Path.of(socketPath));
-            channel = SocketChannel.open(address);
-            channel.configureBlocking(true);
-
-            writer = new BufferedWriter(new OutputStreamWriter(Channels.newOutputStream(channel)));
-            reader = new BufferedReader(new InputStreamReader(Channels.newInputStream(channel)));
+            if (isWindows()) {
+                // Windows: named pipe (Java UDS is Unix-only).
+                pipe = NamedPipe.open(socketPath);
+                writer = new BufferedWriter(new OutputStreamWriter(pipe.out));
+                reader = new BufferedReader(new InputStreamReader(pipe.in));
+            } else {
+                var address = UnixDomainSocketAddress.of(Path.of(socketPath));
+                channel = SocketChannel.open(address);
+                channel.configureBlocking(true);
+                writer = new BufferedWriter(new OutputStreamWriter(Channels.newOutputStream(channel)));
+                reader = new BufferedReader(new InputStreamReader(Channels.newInputStream(channel)));
+            }
 
             // Authenticate
             var authRequest = new IpcProtocol.Request(
@@ -103,7 +110,8 @@ public class IpcClient implements AutoCloseable {
         try { writer.close(); } catch (Exception ignored) {}
         try { reader.close(); } catch (Exception ignored) {}
         try { channel.close(); } catch (Exception ignored) {}
-        writer = null; reader = null; channel = null;
+        if (pipe != null) { pipe.close(); }
+        writer = null; reader = null; channel = null; pipe = null;
         logger.info("[IPC] Disconnected");
     }
 
@@ -209,5 +217,10 @@ public class IpcClient implements AutoCloseable {
 
     public boolean isConnected() {
         return connected.get();
+    }
+
+    /** Detect the Windows platform (named pipe) vs Unix (UDS). */
+    private static boolean isWindows() {
+        return System.getProperty("os.name", "").toLowerCase().contains("win");
     }
 }
