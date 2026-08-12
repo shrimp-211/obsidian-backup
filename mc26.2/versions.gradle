@@ -6,7 +6,7 @@ ext {
 ext.versions = { ->
     def v = [:]
     v.fabric_loader = '0.19.3'
-    v.fabric_api = '0.157.0+26.2'
+    v.fabric_api = '0.156.0+26.2'
     v.paper_api = '26.2.build.112-stable'
     v.java_version = 25
     return v
