@@ -20,7 +20,7 @@ include 'common'
 
 // NeoForge (Kotlin mod) — supports 1.21.1 / 1.21.11 / 26.2. Minecraft 1.20.1
 // has no NeoForge release, so exclude it from the project graph for 1.20.1.
-def activeMc = (findProperty('mc') ?: '1.21.1') as String
+def activeMc = (gradle.startParameter.projectProperties.get('mc') ?: '1.21.1') as String
 if (activeMc != '1.20.1') {
     include 'neoforge'
     project(':neoforge').projectDir = file('mod-neoforge')
