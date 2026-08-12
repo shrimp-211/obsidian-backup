@@ -18,11 +18,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      # Gradle 9 + loom 1.17 supports 1.20.1 → 26.2. ForgeGradle 6.0.54 is
-      # built on Gradle 9.2 so forge works; neoforge 26.2 is excluded below
-      # (neogradle has no Gradle 9 release yet).
+      # 26.2 requires Gradle 9 (loom 1.14+) which ForgeGradle 6 rejects at
+      # runtime ("Gradle 9.0+ not supported yet"). 1.20.1/1.21.1/1.21.11 are
+      # covered here (loom 1.13.3 + Gradle 8.14).
       matrix:
-        mc: ['1.21.1', '1.20.1', '1.21.11', '26.2']
+        mc: ['1.21.1', '1.20.1', '1.21.11']
         loader: [fabric, forge, bukkit]
         exclude:
           # forge 61 (MC 1.21.11) — ForgeGradle 6.0.54 cannot generate its
@@ -37,9 +37,9 @@ jobs:
         uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          # Java 25 daemon (26.2 needs it); bytecode release is controlled
-          # per-module via options.release / java.toolchain in versions.gradle.
-          java-version: 25
+          # Java 21 daemon; bytecode release is controlled per-module via
+          # options.release / java.toolchain in versions.gradle.
+          java-version: 21
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -58,7 +58,7 @@ jobs:
         uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: 25
+          java-version: 21
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -82,7 +82,7 @@ jobs:
         uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: 25
+          java-version: 21
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
