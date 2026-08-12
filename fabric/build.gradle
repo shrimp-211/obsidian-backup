@@ -1,7 +1,5 @@
 plugins {
-    // loom 1.13.x is the latest line compatible with Gradle 8.14; 1.14+ requires
-    // Gradle 9. This keeps a single Gradle version for all loaders (incl. Forge).
-    id 'fabric-loom' version '1.13.3'
+    id 'fabric-loom' version '1.8.11'
     id 'maven-publish'
 }
 
