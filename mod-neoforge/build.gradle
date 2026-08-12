@@ -38,10 +38,13 @@ java {
     withSourcesJar()
 }
 
-// Configure source sets for the Kotlin implementation
+// Configure source sets for the Kotlin implementation.
+// Shared code lives in src/main/kotlin; the McCompat version shim is selected
+// from src/mc-<version>/kotlin based on -Pmc (1.21.1 vs 1.21.11 vs 26.2).
+def mcCompatDir = "src/mc-${mcVersion}/kotlin"
 sourceSets {
     main {
-        kotlin { srcDirs = ['src/main/kotlin'] }
+        kotlin { srcDirs = ['src/main/kotlin', mcCompatDir] }
         resources { srcDirs = ['src/main/resources'] }
     }
 }

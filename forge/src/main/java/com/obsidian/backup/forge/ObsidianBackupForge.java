@@ -89,7 +89,7 @@ public class ObsidianBackupForge {
 
     private void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher) {
         var root = literal("obsidian")
-            .requires(src -> src.hasPermission(2))
+            .requires(McCompat::isOp)
             .then(literal("status")
                 .executes(ctx -> doStatus(ctx.getSource())))
             .then(literal("backup")

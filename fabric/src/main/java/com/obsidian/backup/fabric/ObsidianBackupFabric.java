@@ -74,7 +74,7 @@ public class ObsidianBackupFabric implements DedicatedServerModInitializer {
 
     private void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher) {
         var root = literal("obsidian")
-            .requires(src -> src.hasPermission(2))
+            .requires(McCompat::isOp)
             .then(literal("status")
                 .executes(ctx -> {
                     sendInfo(ctx.getSource(), "正在拉取 Sidecar 实时状态...");

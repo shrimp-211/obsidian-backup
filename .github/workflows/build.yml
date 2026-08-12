@@ -18,11 +18,10 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      # 1.21.11 / 26.2 require source-level API adaptation (ResourceLocation,
-      # hasPermission removed in MC 1.21.2+) and newer loom (Gradle 9) — pending.
-      # 1.20.1 / 1.21.1 are fully covered.
+      # 26.2 requires Java 25 + Gradle 9 (loom 1.14+) — pending tooling.
+      # 1.20.1 / 1.21.1 / 1.21.11 are covered (loom 1.13.3 + Gradle 8.14).
       matrix:
-        mc: ['1.21.1', '1.20.1']
+        mc: ['1.21.1', '1.20.1', '1.21.11']
         loader: [fabric, forge, bukkit]
 
     steps:
@@ -32,7 +31,9 @@ jobs:
         uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: ${{ matrix.mc == '1.20.1' && '17' || '21' }}
+          # loom 1.13+ needs Java 21 to run; bytecode release is controlled
+          # per-module via options.release / java.toolchain in versions.gradle.
+          java-version: 21
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -61,8 +62,12 @@ jobs:
 
   # NeoForge module (Kotlin implementation; -Pmc switches 1.21.1/1.21.11/26.2)
   neoforge:
-    name: NeoForge 1.21.1
+    name: NeoForge ${{ matrix.mc }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        mc: ['1.21.1', '1.21.11']
     steps:
       - uses: actions/checkout@v4
 
@@ -75,5 +80,5 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build neoforge
-        run: ./gradlew :neoforge:build --no-daemon
+      - name: Build neoforge (${{ matrix.mc }})
+        run: ./gradlew :neoforge:build -Pmc=${{ matrix.mc }} --no-daemon

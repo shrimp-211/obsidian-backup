@@ -4,7 +4,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.MutableComponent
 import net.minecraft.network.chat.Style
 import net.minecraft.network.chat.TextColor
-import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.level.ServerBossEvent
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.BossEvent
@@ -25,8 +24,6 @@ class BossBarIndicator {
     // Use a fixed key so the same BossBar is reused across progress updates
     private val progressBarKey = UUID.fromString("00000000-0000-0000-0000-000000000001")
     private var progressBar: ServerBossEvent? = null
-
-    private val barId = ResourceLocation.fromNamespaceAndPath("obsidian_backup", "backup_progress")
 
     fun showProgress(
         players: Collection<ServerPlayer>,

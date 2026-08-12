@@ -6,6 +6,7 @@ import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
+import com.obsidian.backup.McCompat
 import com.obsidian.backup.ObsidianBackupMod
 import com.obsidian.backup.hook.BackupHooks
 import com.obsidian.backup.ipc.IpcProtocol
@@ -41,7 +42,7 @@ object ObsidianCommandRoot {
     fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
         val root = Commands.literal("obsidian")
             .requires { src ->
-                src.hasPermission(2) || src.hasPermission(4) // OP level 2+ or integrated server
+                McCompat.isOp(src) // OP level 2+ or integrated server
             }
             .then(statusCommand())
             .then(topCommand())
@@ -236,7 +237,7 @@ object ObsidianCommandRoot {
 
         // Show BossBar to all ops
         val onlineOps = server.playerList.players
-            .filter { it.hasPermissions(2) }
+            .filter { McCompat.isOp(it) }
         if (mod.config.enableBossBarProgress) {
             mod.bossBarIndicator.showProgress(
                 onlineOps, BossBarIndicator.BackupPhase.SCANNING, 0f,

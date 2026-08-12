@@ -13,6 +13,14 @@ def mcVersion = project.mc
 version = "${mcVersion}-${rootProject.mod_version}"
 group = 'com.obsidian.backup'
 
+// Version-specific source dir for the McCompat shim (selected by -Pmc).
+def mcCompatDir = "src/mc-${mcVersion}/java"
+sourceSets {
+    main {
+        java { srcDirs = ['src/main/java', mcCompatDir] }
+    }
+}
+
 base {
     archivesName = "obsidian-backup-forge-${mcVersion}"
 }

@@ -7,7 +7,6 @@ import com.obsidian.backup.ipc.IpcClient
 import com.obsidian.backup.ui.BossBarIndicator
 import com.obsidian.backup.ui.ChatRenderer
 import com.mojang.logging.LogUtils
-import net.minecraft.resources.ResourceLocation
 import net.neoforged.api.distmarker.Dist
 import net.neoforged.bus.api.IEventBus
 import net.neoforged.fml.ModContainer
@@ -35,8 +34,6 @@ class ObsidianBackupMod(
             private set
 
         val SIDECAR_SOCKET_PATH = ".obsidian/ipc/obsidian.sock"
-
-        fun loc(path: String): ResourceLocation = ResourceLocation.fromNamespaceAndPath(MOD_ID, path)
     }
 
     val config: ModConfig = ModConfig.load()
