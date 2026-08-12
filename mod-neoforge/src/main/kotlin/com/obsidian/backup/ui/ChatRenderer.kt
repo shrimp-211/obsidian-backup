@@ -103,21 +103,19 @@ class ChatRenderer {
     }
 
     fun actionButtons(): MutableComponent {
-        val pauseBtn = Component.literal("[ ⏸️ 暂停备份 ]")
+        // NOTE: ClickEvent/HoverEvent were restructured into a codec-based
+        // subclass hierarchy in MC 1.21.2+, so we render these as plain styled
+        // text (no click interaction) to stay version-agnostic. The commands
+        // remain available as /obsidian backup --pause / --cancel.
+        val pauseBtn = Component.literal("[ ⏸️ 暂停: /obsidian backup --pause ]")
             .withStyle(Style.EMPTY
                 .withColor(ChatFormatting.GOLD)
-                .withBold(true)
-                .withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/obsidian backup --pause"))
-                .withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                    Component.literal("点击暂停当前备份任务"))))
+                .withBold(true))
 
-        val stopBtn = Component.literal("[ 🛑 终止并回滚事务 ]")
+        val stopBtn = Component.literal("[ 🛑 终止: /obsidian backup --cancel ]")
             .withStyle(Style.EMPTY
                 .withColor(ChatFormatting.RED)
-                .withBold(true)
-                .withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/obsidian backup --cancel"))
-                .withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                    Component.literal("点击终止当前备份并回滚事务"))))
+                .withBold(true))
 
         return Component.literal("  ")
             .append(pauseBtn)
