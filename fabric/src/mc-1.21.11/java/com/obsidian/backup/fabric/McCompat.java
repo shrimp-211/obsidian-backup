@@ -14,6 +14,6 @@ public final class McCompat {
 
     /** True if the command source is OP level 2 (gamemaster) or above. */
     public static boolean isOp(CommandSourceStack source) {
-        return source.hasPermission(Permissions.COMMANDS_GAMEMASTER);
+        return source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER);
     }
 }

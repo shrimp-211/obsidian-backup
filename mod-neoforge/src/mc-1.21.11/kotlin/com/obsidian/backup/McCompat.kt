@@ -13,9 +13,9 @@ import net.minecraft.server.permissions.Permissions
 object McCompat {
     /** True if the command source is OP level 2 (gamemaster) or above. */
     fun isOp(source: CommandSourceStack): Boolean =
-        source.hasPermission(Permissions.COMMANDS_GAMEMASTER)
+        source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)
 
     /** True if the player is OP level 2 (gamemaster) or above. */
     fun isOp(player: ServerPlayer): Boolean =
-        player.hasPermission(Permissions.COMMANDS_GAMEMASTER)
+        player.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)
 }
