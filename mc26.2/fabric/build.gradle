@@ -1,0 +1,69 @@
+// Fabric 26.2 (Gradle 9 standalone build).
+// Reuses the main project's Fabric source (../fabric) + the 1.21.11 McCompat
+// shim (26.2 uses the same Permission object system as 1.21.2+).
+
+plugins {
+    id 'fabric-loom' version '1.17.19'
+    id 'maven-publish'
+}
+
+apply from: rootProject.file('versions.gradle')
+def v = versions()
+
+version = "26.2-${rootProject.mod_version}"
+group = 'com.obsidian.backup'
+
+base {
+    archivesName = 'obsidian-backup-fabric-26.2'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+    withSourcesJar()
+}
+
+// Reuse the main project's source (shared implementation + version shim).
+sourceSets {
+    main {
+        java {
+            srcDirs = [
+                rootProject.file('../fabric/src/main/java'),
+                rootProject.file('../fabric/src/main/resources'),
+                rootProject.file('../fabric/src/mc-1.21.11/java'),
+            ]
+        }
+    }
+}
+
+loom {
+    runs {
+        server {
+            server()
+            ideConfigGenerated(true)
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://maven.fabricmc.net/' }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:26.2"
+    mappings loom.officialMojangMappings()
+
+    modImplementation "net.fabricmc:fabric-loader:${v.fabric_loader}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${v.fabric_api}"
+
+    // Shared library (IPC protocol + cross-platform Named Pipe support)
+    implementation project(':common')
+    include project(':common')
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 25
+}

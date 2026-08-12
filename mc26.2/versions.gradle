@@ -1,0 +1,13 @@
+// Version matrix for the Minecraft 26.2 standalone build.
+ext {
+    mc = '26.2'
+}
+
+ext.versions = { ->
+    def v = [:]
+    v.fabric_loader = '0.19.3'
+    v.fabric_api = '0.157.0+26.2'
+    v.paper_api = '26.2.build.112-stable'
+    v.java_version = 25
+    return v
+}

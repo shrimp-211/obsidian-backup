@@ -1,0 +1,46 @@
+// Bukkit/Paper 26.2 (Gradle 9 standalone build).
+// Reuses the main project's Bukkit source (../bukkit).
+
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+apply from: rootProject.file('versions.gradle')
+def v = versions()
+
+version = "26.2-${rootProject.mod_version}"
+group = 'com.obsidian.backup'
+
+base {
+    archivesName = 'obsidian-backup-bukkit-26.2'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+// Reuse the main project's source.
+sourceSets {
+    main {
+        java { srcDirs = [rootProject.file('../bukkit/src/main/java')] }
+        resources { srcDirs = [rootProject.file('../bukkit/src/main/resources')] }
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://repo.papermc.io/repository/maven-public/' }
+}
+
+dependencies {
+    compileOnly "io.papermc.paper:paper-api:${v.paper_api}"
+    implementation project(':common')
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 25
+}

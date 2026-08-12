@@ -1,0 +1,31 @@
+// Minecraft 26.2 standalone build (Gradle 9 + Java 25).
+//
+// 26.2 requires Gradle 9 (loom 1.14+) and Java 25, but ForgeGradle 6 and
+// neogradle 7.1.38 reject Gradle 9 at runtime. This separate build therefore
+// covers only the loaders whose toolchain is Gradle-9 ready: Fabric + Bukkit.
+// The 1.20.1/1.21.1/1.21.11 build (incl. Forge/NeoForge) lives at the repo
+// root and keeps Gradle 8.14.
+
+pluginManagement {
+    repositories {
+        mavenLocal()
+        gradlePluginPortal()
+        maven { url = 'https://maven.fabricmc.net/' }
+        maven { url = 'https://repo.papermc.io/repository/maven-public/' }
+    }
+}
+
+rootProject.name = 'obsidian-backup-26.2'
+
+include 'common'
+project(':common').projectDir = file('common')
+
+include 'fabric'
+project(':fabric').projectDir = file('fabric')
+
+include 'bukkit'
+project(':bukkit').projectDir = file('bukkit')
+
+gradle.beforeProject { project ->
+    project.ext.mod_version = '0.2.0'
+}

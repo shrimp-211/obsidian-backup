@@ -1,0 +1,39 @@
+// Shared library for the 26.2 standalone build (Gradle 9 + Java 25).
+// Reuses the main project's common source (../common).
+
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+group = 'com.obsidian.backup'
+version = '0.2.0'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+    withSourcesJar()
+}
+
+// Reuse the main project's common source.
+sourceSets {
+    main {
+        java { srcDirs = [rootProject.file('../common/src/main/java')] }
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'com.google.code.gson:gson:2.11.0'
+    implementation 'net.java.dev.jna:jna:5.14.0'
+    implementation 'net.java.dev.jna:jna-platform:5.14.0'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 25
+}
