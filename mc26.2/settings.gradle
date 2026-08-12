@@ -20,9 +20,9 @@ rootProject.name = 'obsidian-backup-26.2'
 include 'common'
 project(':common').projectDir = file('common')
 
-include 'fabric'
-project(':fabric').projectDir = file('fabric')
-
+// NOTE: fabric 26.2 is disabled — Mojang has not published official 26.2
+// mappings and Fabric has not published yarn 26.2 yet, so loom cannot resolve
+// them. Only Bukkit (paper-api needs no mappings) is buildable today.
 include 'bukkit'
 project(':bukkit').projectDir = file('bukkit')
 
