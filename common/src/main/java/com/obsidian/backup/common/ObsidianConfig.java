@@ -12,8 +12,12 @@ import java.util.Properties;
  *
  * Precedence (highest first):
  *   1. JVM system properties (-Dobsidian.*)
- *   2. Config file `.obsidian/obsidian.properties` (server root)
+ *   2. Config file (loader-specific path, see below)
  *   3. Built-in defaults
+ *
+ * Config file location follows Minecraft conventions:
+ *   - Mods (Fabric/Forge/NeoForge): config/obsidian.properties
+ *   - Plugins (Bukkit/Paper): plugins/ObsidianBackup/config.properties
  *
  * The default engine is EMBEDDED (in-mod, no external process). Set
  * `engine=sidecar` in the config file to use the high-performance Rust sidecar.
@@ -22,7 +26,7 @@ public class ObsidianConfig {
 
     public enum Engine { SIDECAR, EMBEDDED }
 
-    private static final String CONFIG_FILE = ".obsidian/obsidian.properties";
+    private static final String CONFIG_FILE = "config/obsidian.properties";
 
     private final String sidecarSocketPath;
     private final String authToken;

@@ -38,7 +38,7 @@ public class ObsidianBackupPlugin extends JavaPlugin implements CommandExecutor,
 
     @Override
     public void onEnable() {
-        config = ObsidianConfig.load();
+        config = ObsidianConfig.load(getDataFolder().toPath().resolve("config.properties"));
         ipcClient = new IpcClient(config.sidecarSocketPath(), config.authToken(), ipcLogger);
 
         // Register command

@@ -32,11 +32,23 @@ data class ModConfig(
 
     companion object {
         fun load(): ModConfig {
-            val socketPath = System.getProperty("obsidian.socket", ".obsidian/ipc/obsidian.sock")
-            val token = System.getProperty("obsidian.token", "obsidian-default-token")
-            val embedded = !"sidecar".equals(System.getProperty("obsidian.engine", "embedded"), true)
-            val connectTimeout = System.getProperty("obsidian.connect_timeout", "5000").toLong()
-            val requestTimeout = System.getProperty("obsidian.request_timeout", "30000").toLong()
+            val props = java.util.Properties()
+            try {
+                java.nio.file.Files.newInputStream(
+                    java.nio.file.Path.of("config/obsidian.properties")
+                ).use { props.load(it) }
+            } catch (_: Exception) {
+                // config file absent — use defaults
+            }
+
+            fun prop(key: String, def: String): String =
+                System.getProperty(key) ?: props.getProperty(key, def)
+
+            val socketPath = prop("obsidian.socket", ".obsidian/ipc/obsidian.sock")
+            val token = prop("obsidian.token", "obsidian-default-token")
+            val embedded = !"sidecar".equals(prop("obsidian.engine", "embedded"), true)
+            val connectTimeout = prop("obsidian.connect_timeout", "5000").toLong()
+            val requestTimeout = prop("obsidian.request_timeout", "30000").toLong()
 
             ObsidianBackupMod.LOGGER.info("[Config] Sidecar socket: {}", socketPath)
 
