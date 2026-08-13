@@ -35,15 +35,22 @@ public class EmbeddedBackupEngine {
     private final Path snapshotDir;
     private final ChunkEngine chunkEngine;
     private final ObjectStore objectStore;
+    private final SnapshotSigner signer;
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final AtomicBoolean cancelled = new AtomicBoolean(false);
 
     public EmbeddedBackupEngine(Path serverRoot) throws IOException {
+        this(serverRoot, true);
+    }
+
+    /** @param enableSigning if true, snapshot manifests are Ed25519-signed. */
+    public EmbeddedBackupEngine(Path serverRoot, boolean enableSigning) throws IOException {
         this.serverRoot = serverRoot;
         this.objectsDir = serverRoot.resolve(".obsidian/objects");
         this.snapshotDir = serverRoot.resolve(".obsidian/snapshots");
         this.chunkEngine = new ChunkEngine();
         this.objectStore = new ObjectStore(serverRoot);
+        this.signer = enableSigning ? SnapshotSigner.loadOrCreate(serverRoot) : null;
         Files.createDirectories(snapshotDir);
     }
 
@@ -155,6 +162,10 @@ public class EmbeddedBackupEngine {
         manifest.chunksDeduped = chunksDeduped[0];
         manifest.bytes = bytes[0];
         writeManifest(manifest);
+        if (signer != null) {
+            String sig = signer.sign(GSON.toJson(manifest).getBytes());
+            Files.write(snapshotDir.resolve(snapshotId + ".sig"), sig.getBytes());
+        }
         return new BackupResult(snapshotId, (int) manifest.fileCount, chunksTotal[0], chunksDeduped[0], bytes[0]);
     }
 
@@ -163,6 +174,7 @@ public class EmbeddedBackupEngine {
     public void restore(String snapshotId) throws IOException {
         Manifest m = loadManifest(snapshotId);
         if (m == null) throw new IOException("Snapshot not found: " + snapshotId);
+        verifySignature(snapshotId);
         for (Map.Entry<String, List<String>> e : m.files.entrySet()) {
             Path target = serverRoot.resolve(e.getKey()).normalize();
             if (!target.startsWith(serverRoot)) throw new IOException("Unsafe path: " + e.getKey());
@@ -342,5 +354,17 @@ public class EmbeddedBackupEngine {
 
     private void writeManifest(Manifest m) throws IOException {
         Files.write(snapshotDir.resolve(m.id + ".json"), GSON.toJson(m).getBytes());
+    }
+
+    private void verifySignature(String snapshotId) throws IOException {
+        if (signer == null) return;
+        Path sigFile = snapshotDir.resolve(snapshotId + ".sig");
+        Path manifestFile = snapshotDir.resolve(snapshotId + ".json");
+        if (!Files.exists(sigFile)) return; // unsigned snapshot
+        String sig = Files.readString(sigFile);
+        byte[] data = Files.readAllBytes(manifestFile);
+        if (!signer.verify(data, sig)) {
+            throw new IOException("Snapshot " + snapshotId + " signature verification FAILED");
+        }
     }
 }
