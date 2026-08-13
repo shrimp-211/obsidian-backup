@@ -3,7 +3,6 @@ package com.obsidian.backup.bukkit;
 import com.obsidian.backup.common.IpcClient;
 import com.obsidian.backup.common.IpcProtocol;
 import com.obsidian.backup.common.ObsidianConfig;
-import com.obsidian.backup.common.SidecarProcessManager;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.*;
@@ -23,7 +22,6 @@ public class ObsidianBackupPlugin extends JavaPlugin implements CommandExecutor,
 
     private ObsidianConfig config;
     private IpcClient ipcClient;
-    private SidecarProcessManager sidecarProcess;
     private final IpcClient.Logger ipcLogger = new IpcClient.Logger() {
         @Override public void info(String msg, Object... args) {
             getLogger().info(String.format(msg.replace("{}", "%s"), args));
@@ -48,17 +46,10 @@ public class ObsidianBackupPlugin extends JavaPlugin implements CommandExecutor,
             cmd.setTabCompleter(this);
         }
 
-        // Connect to Sidecar (auto-start the Sidecar process if not running)
+        // Connect to Sidecar
         Bukkit.getScheduler().runTaskLater(this, () -> {
-            if (config.autoStartSidecar()) {
-                String serverRoot = getServer().getWorldContainer().getAbsolutePath();
-                sidecarProcess = new SidecarProcessManager(
-                    config.sidecarBinaryPath(), serverRoot, config.sidecarSocketPath(),
-                    msg -> getLogger().info(msg));
-                sidecarProcess.startIfNeeded();
-            }
             if (!ipcClient.connect()) {
-                getLogger().warning("Failed to connect to Sidecar at " + config.sidecarSocketPath());
+                getLogger().warning("Failed to connect to Sidecar daemon at " + config.sidecarSocketPath());
             }
         }, 20L);
 
@@ -71,10 +62,6 @@ public class ObsidianBackupPlugin extends JavaPlugin implements CommandExecutor,
     @Override
     public void onDisable() {
         if (ipcClient != null) ipcClient.close();
-        if (sidecarProcess != null) {
-            sidecarProcess.close();
-            sidecarProcess = null;
-        }
         getLogger().info("[Obsidian Backup] Bukkit plugin disabled");
     }
 

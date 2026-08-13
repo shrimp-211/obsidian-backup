@@ -1,7 +1,6 @@
 package com.obsidian.backup
 
 import com.obsidian.backup.command.ObsidianCommandRoot
-import com.obsidian.backup.common.SidecarProcessManager
 import com.obsidian.backup.config.ModConfig
 import com.obsidian.backup.hook.BackupHooks
 import com.obsidian.backup.ipc.IpcClient
@@ -39,7 +38,6 @@ class ObsidianBackupMod(
 
     val config: ModConfig = ModConfig.load()
     val ipcClient: IpcClient = IpcClient(config)
-    var sidecarProcess: SidecarProcessManager? = null
     val chatRenderer: ChatRenderer = ChatRenderer()
     val bossBarIndicator: BossBarIndicator = BossBarIndicator()
     val hooks: BackupHooks = BackupHooks()
@@ -70,15 +68,7 @@ class ObsidianBackupMod(
     }
 
     private fun onServerStarted(event: ServerStartedEvent) {
-        LOGGER.info("[Obsidian Backup] Connecting to Sidecar...")
-        // Auto-start the Sidecar process if not already running.
-        sidecarProcess = SidecarProcessManager(
-            config.sidecarBinaryPath,
-            event.server.serverDirectory.toAbsolutePath().toString(),
-            config.sidecarSocketPath,
-            SidecarProcessManager.Logger { msg -> LOGGER.info(msg) }
-        )
-        sidecarProcess?.startIfNeeded()
+        LOGGER.info("[Obsidian Backup] Connecting to Sidecar daemon...")
         ipcClient.connect()
         hooks.onServerStart(event.server)
     }
@@ -86,8 +76,6 @@ class ObsidianBackupMod(
     private fun onServerStopping(event: ServerStoppingEvent) {
         LOGGER.info("[Obsidian Backup] Server stopping — draining pending transactions...")
         ipcClient.disconnect()
-        sidecarProcess?.close()
-        sidecarProcess = null
     }
 
     private fun onServerStopped(event: ServerStoppedEvent) {

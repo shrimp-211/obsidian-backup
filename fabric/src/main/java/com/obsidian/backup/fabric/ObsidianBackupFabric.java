@@ -3,7 +3,6 @@ package com.obsidian.backup.fabric;
 import com.obsidian.backup.common.IpcClient;
 import com.obsidian.backup.common.IpcProtocol;
 import com.obsidian.backup.common.ObsidianConfig;
-import com.obsidian.backup.common.SidecarProcessManager;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -37,7 +36,6 @@ public class ObsidianBackupFabric implements DedicatedServerModInitializer {
 
     private ObsidianConfig config;
     private IpcClient ipcClient;
-    private SidecarProcessManager sidecarProcess;
     private final IpcClient.Logger ipcLogger = new IpcClient.Logger() {
         @Override public void info(String msg, Object... args) { LOGGER.info(msg, args); }
         @Override public void warn(String msg, Object... args) { LOGGER.warn(msg, args); }
@@ -59,24 +57,12 @@ public class ObsidianBackupFabric implements DedicatedServerModInitializer {
         // Lifecycle events
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             LOGGER.info("[Obsidian Backup] Server started — connecting to Sidecar...");
-            // Auto-start the Sidecar process if not already running.
-            if (config.autoStartSidecar()) {
-                String serverRoot = server.getServerDirectory().toAbsolutePath().toString();
-                sidecarProcess = new SidecarProcessManager(
-                    config.sidecarBinaryPath(), serverRoot, config.sidecarSocketPath(),
-                    msg -> LOGGER.info(msg));
-                sidecarProcess.startIfNeeded();
-            }
             ipcClient.connect();
         });
 
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
             LOGGER.info("[Obsidian Backup] Server stopping — disconnecting...");
             ipcClient.close();
-            if (sidecarProcess != null) {
-                sidecarProcess.close();
-                sidecarProcess = null;
-            }
         });
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {

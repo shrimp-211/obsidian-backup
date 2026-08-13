@@ -1,7 +1,6 @@
 package com.obsidian.backup.config
 
 import com.obsidian.backup.ObsidianBackupMod
-import com.obsidian.backup.common.SidecarProcessManager
 
 /**
  * Configuration for the Obsidian Backup NeoForge mod.
@@ -11,8 +10,6 @@ import com.obsidian.backup.common.SidecarProcessManager
 data class ModConfig(
     val sidecarSocketPath: String = ".obsidian/ipc/obsidian.sock",
     val sidecarToken: String = "obsidian-default-token",
-    val sidecarBinaryPath: String = SidecarProcessManager.defaultBinaryPath(),
-    val autoStartSidecar: Boolean = true,
     val sidecarConnectTimeoutMs: Long = 5000,
     val sidecarRequestTimeoutMs: Long = 30000,
     val enableBossBarProgress: Boolean = true,
@@ -36,8 +33,6 @@ data class ModConfig(
         fun load(): ModConfig {
             val socketPath = System.getProperty("obsidian.socket", ".obsidian/ipc/obsidian.sock")
             val token = System.getProperty("obsidian.token", "obsidian-default-token")
-            val binaryPath = System.getProperty("obsidian.sidecar_binary", SidecarProcessManager.defaultBinaryPath())
-            val autoStart = !"false".equals(System.getProperty("obsidian.autostart_sidecar", "true"))
             val connectTimeout = System.getProperty("obsidian.connect_timeout", "5000").toLong()
             val requestTimeout = System.getProperty("obsidian.request_timeout", "30000").toLong()
 
@@ -46,8 +41,6 @@ data class ModConfig(
             return ModConfig(
                 sidecarSocketPath = socketPath,
                 sidecarToken = token,
-                sidecarBinaryPath = binaryPath,
-                autoStartSidecar = autoStart,
                 sidecarConnectTimeoutMs = connectTimeout,
                 sidecarRequestTimeoutMs = requestTimeout
             )

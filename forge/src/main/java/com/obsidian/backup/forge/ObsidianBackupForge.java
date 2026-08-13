@@ -3,7 +3,6 @@ package com.obsidian.backup.forge;
 import com.obsidian.backup.common.IpcClient;
 import com.obsidian.backup.common.IpcProtocol;
 import com.obsidian.backup.common.ObsidianConfig;
-import com.obsidian.backup.common.SidecarProcessManager;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -37,7 +36,6 @@ public class ObsidianBackupForge {
 
     private ObsidianConfig config;
     private IpcClient ipcClient;
-    private SidecarProcessManager sidecarProcess;
     private final IpcClient.Logger ipcLogger = new IpcClient.Logger() {
         @Override public void info(String msg, Object... args) { LOGGER.info(msg, args); }
         @Override public void warn(String msg, Object... args) { LOGGER.warn(msg, args); }
@@ -73,13 +71,6 @@ public class ObsidianBackupForge {
     @SubscribeEvent
     public void onServerStarted(ServerStartedEvent event) {
         LOGGER.info("[Obsidian Backup] Server started — connecting to Sidecar...");
-        if (config.autoStartSidecar()) {
-            String serverRoot = event.getServer().getServerDirectory().toAbsolutePath().toString();
-            sidecarProcess = new SidecarProcessManager(
-                config.sidecarBinaryPath(), serverRoot, config.sidecarSocketPath(),
-                msg -> LOGGER.info(msg));
-            sidecarProcess.startIfNeeded();
-        }
         ipcClient.connect();
     }
 
@@ -87,10 +78,6 @@ public class ObsidianBackupForge {
     public void onServerStopping(ServerStoppingEvent event) {
         LOGGER.info("[Obsidian Backup] Server stopping — disconnecting...");
         ipcClient.close();
-        if (sidecarProcess != null) {
-            sidecarProcess.close();
-            sidecarProcess = null;
-        }
     }
 
     @SubscribeEvent
