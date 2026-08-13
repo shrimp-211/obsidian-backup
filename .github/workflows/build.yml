@@ -47,6 +47,12 @@ jobs:
       - name: Build ${{ matrix.loader }} (${{ matrix.mc }})
         run: ./gradlew :${{ matrix.loader }}:build -Pmc=${{ matrix.mc }} --no-daemon
 
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: obsidian-backup-${{ matrix.loader }}-${{ matrix.mc }}
+          path: ${{ matrix.loader }}/build/libs/*.jar
+
   # Common module (version-independent)
   common:
     name: Common Library
@@ -115,3 +121,9 @@ jobs:
       - name: Build ${{ matrix.loader }} (26.2)
         run: ./gradlew :${{ matrix.loader }}:build --no-daemon
         working-directory: mc26.2
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: obsidian-backup-${{ matrix.loader }}-26.2
+          path: mc26.2/${{ matrix.loader }}/build/libs/*.jar

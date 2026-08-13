@@ -1,0 +1,57 @@
+name: Release
+
+# Controlled release: only on version tags. Produces one jar per loader for
+# the primary version (1.21.1) plus 26.2 fabric/bukkit — no sources/javadoc,
+# no full version matrix.
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: Build & Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # Primary version 1.21.1 (default) — 4 loaders.
+      - name: Build 1.21.1 loaders
+        run: ./gradlew :fabric:build :forge:build :bukkit:build :neoforge:build --no-daemon
+
+      - name: Build 1.20.1 loaders
+        run: ./gradlew :fabric:build :forge:build :bukkit:build -Pmc=1.20.1 --no-daemon
+
+      # 26.2 standalone build (Gradle 9 + Java 25).
+      - name: Set up Java 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: 25
+
+      - name: Build 26.2
+        run: ./gradlew :fabric:build :bukkit:build --no-daemon
+        working-directory: mc26.2
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            fabric/build/libs/*.jar
+            forge/build/libs/*.jar
+            bukkit/build/libs/*.jar
+            mod-neoforge/build/libs/*.jar
+            mc26.2/fabric/build/libs/*.jar
+            mc26.2/bukkit/build/libs/*.jar
+          fail_on_unmatched_files: false
