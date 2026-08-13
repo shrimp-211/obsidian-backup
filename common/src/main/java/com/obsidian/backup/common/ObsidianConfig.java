@@ -1,13 +1,28 @@
 package com.obsidian.backup.common;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Properties;
+
 /**
  * Configuration shared across all loader implementations.
- * Loaded via system properties with sensible defaults.
+ *
+ * Precedence (highest first):
+ *   1. JVM system properties (-Dobsidian.*)
+ *   2. Config file `.obsidian/obsidian.properties` (server root)
+ *   3. Built-in defaults
+ *
+ * The default engine is EMBEDDED (in-mod, no external process). Set
+ * `engine=sidecar` in the config file to use the high-performance Rust sidecar.
  */
 public class ObsidianConfig {
 
-    /** Backup engine modes. */
     public enum Engine { SIDECAR, EMBEDDED }
+
+    private static final String CONFIG_FILE = ".obsidian/obsidian.properties";
 
     private final String sidecarSocketPath;
     private final String authToken;
@@ -43,23 +58,41 @@ public class ObsidianConfig {
     public long autoBackupIntervalMinutes() { return autoBackupIntervalMinutes; }
     public int autoBackupKeep() { return autoBackupKeep; }
 
-    /** True when using the embedded (in-mod) backup engine. */
     public boolean isEmbedded() { return engine == Engine.EMBEDDED; }
 
-    /** Load config from system properties with defaults. */
+    /** Load config from the server-root config file + system properties. */
     public static ObsidianConfig load() {
-        String engineProp = System.getProperty("obsidian.engine", "sidecar");
-        Engine engine = "embedded".equalsIgnoreCase(engineProp) ? Engine.EMBEDDED : Engine.SIDECAR;
+        return load(Paths.get(CONFIG_FILE));
+    }
+
+    /** Load config, reading the given config file first (system props override). */
+    public static ObsidianConfig load(Path configFile) {
+        Properties file = new Properties();
+        if (Files.exists(configFile)) {
+            try (InputStream in = Files.newInputStream(configFile)) {
+                file.load(in);
+            } catch (IOException ignored) {
+                // Fall back to defaults if the config file is unreadable.
+            }
+        }
         return new ObsidianConfig(
-            System.getProperty("obsidian.socket", ".obsidian/ipc/obsidian.sock"),
-            System.getProperty("obsidian.token", "obsidian-default-token"),
-            Long.parseLong(System.getProperty("obsidian.connect_timeout", "5000")),
-            !"false".equals(System.getProperty("obsidian.bossbar", "true")),
-            !"false".equals(System.getProperty("obsidian.chat", "true")),
+            prop("obsidian.socket", file, ".obsidian/ipc/obsidian.sock"),
+            prop("obsidian.token", file, "obsidian-default-token"),
+            Long.parseLong(prop("obsidian.connect_timeout", file, "5000")),
+            !"false".equals(prop("obsidian.bossbar", file, "true")),
+            !"false".equals(prop("obsidian.chat", file, "true")),
             "obsidian.admin",
-            engine,
-            Long.parseLong(System.getProperty("obsidian.auto_backup_minutes", "30")),
-            Integer.parseInt(System.getProperty("obsidian.auto_backup_keep", "10"))
+            "sidecar".equalsIgnoreCase(prop("obsidian.engine", file, "embedded"))
+                ? Engine.SIDECAR : Engine.EMBEDDED,
+            Long.parseLong(prop("obsidian.auto_backup_minutes", file, "30")),
+            Integer.parseInt(prop("obsidian.auto_backup_keep", file, "10"))
         );
+    }
+
+    /** System property takes precedence over the config file. */
+    private static String prop(String key, Properties file, String def) {
+        String sys = System.getProperty(key);
+        if (sys != null) return sys;
+        return file.getProperty(key, def);
     }
 }
