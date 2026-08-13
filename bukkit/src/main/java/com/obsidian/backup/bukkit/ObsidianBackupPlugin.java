@@ -90,6 +90,10 @@ public class ObsidianBackupPlugin extends JavaPlugin implements CommandExecutor,
         String sub = args[0].toLowerCase();
         switch (sub) {
             case "status" -> {
+                if (config.isEmbedded()) {
+                    send(sender, "&a内置引擎状态: " + (embeddedEngine.isRunning() ? "备份中" : "空闲"));
+                    break;
+                }
                 send(sender, "&b正在拉取 Sidecar 实时状态...");
                 ipcClient.sendRequest(IpcProtocol.OpCode.STATUS, IpcProtocol.paramsStatus(),
                     resp -> {
@@ -163,6 +167,19 @@ public class ObsidianBackupPlugin extends JavaPlugin implements CommandExecutor,
             }
             case "top" -> {
                 int limit = args.length > 1 ? parseInt(args[1], 5) : 5;
+                if (config.isEmbedded()) {
+                    new Thread(() -> {
+                        try {
+                            send(sender, "&5─── 存储空间热力图 TOP " + limit + " ───");
+                            for (var f : embeddedEngine.top(limit)) {
+                                send(sender, "  " + f.path + " [" + f.size + " bytes]");
+                            }
+                        } catch (Exception e) {
+                            send(sender, "&c分析失败: " + e.getMessage());
+                        }
+                    }).start();
+                    break;
+                }
                 ipcClient.sendRequest(IpcProtocol.OpCode.TOP, IpcProtocol.paramsTop(limit),
                     resp -> {
                         if ("ok".equals(resp.status) && resp.data != null) {
@@ -178,11 +195,36 @@ public class ObsidianBackupPlugin extends JavaPlugin implements CommandExecutor,
             }
             case "verify" -> {
                 boolean repair = hasArg(args, "repair");
+                if (config.isEmbedded()) {
+                    new Thread(() -> {
+                        try {
+                            var v = embeddedEngine.verify();
+                            send(sender, String.format("&a巡检: %d 块, 健康 %d, 损坏 %d", v.checked, v.healthy, v.corrupted));
+                        } catch (Exception e) {
+                            send(sender, "&c巡检失败: " + e.getMessage());
+                        }
+                    }).start();
+                    break;
+                }
                 ipcClient.sendRequest(IpcProtocol.OpCode.VERIFY, IpcProtocol.paramsVerify(repair),
                     resp -> send(sender, "ok".equals(resp.status) ? "&a巡检完成" : "&c巡检失败"));
             }
             case "diff" -> {
                 if (args.length < 3) { send(sender, "&c用法: /obsidian diff <id_a> <id_b>"); break; }
+                if (config.isEmbedded()) {
+                    new Thread(() -> {
+                        try {
+                            var d = embeddedEngine.diff(args[1], args[2]);
+                            send(sender, "&e─── 快照差异对比 ───");
+                            send(sender, "&a+ 新增: " + d.added.size());
+                            send(sender, "&e* 修改: " + d.modified.size());
+                            send(sender, "&c- 删除: " + d.deleted.size());
+                        } catch (Exception e) {
+                            send(sender, "&c对比失败: " + e.getMessage());
+                        }
+                    }).start();
+                    break;
+                }
                 ipcClient.sendRequest(IpcProtocol.OpCode.DIFF, IpcProtocol.paramsDiff(args[1], args[2]),
                     resp -> {
                         if ("ok".equals(resp.status) && resp.data != null) {
@@ -195,6 +237,16 @@ public class ObsidianBackupPlugin extends JavaPlugin implements CommandExecutor,
                     });
             }
             case "forecast" -> {
+                if (config.isEmbedded()) {
+                    new Thread(() -> {
+                        try {
+                            send(sender, "&b" + embeddedEngine.forecast());
+                        } catch (Exception e) {
+                            send(sender, "&c预测失败: " + e.getMessage());
+                        }
+                    }).start();
+                    break;
+                }
                 ipcClient.sendRequest(IpcProtocol.OpCode.FORECAST, IpcProtocol.paramsForecast(),
                     resp -> {
                         if ("ok".equals(resp.status) && resp.data != null) {

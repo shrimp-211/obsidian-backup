@@ -119,6 +119,10 @@ public class ObsidianBackupForge {
     }
 
     private int doStatus(CommandSourceStack src) {
+        if (config.isEmbedded()) {
+            sendInfo(src, "内置引擎状态: " + (embeddedEngine.isRunning() ? "备份中" : "空闲"));
+            return 1;
+        }
         sendInfo(src, "正在拉取 Sidecar 实时状态...");
         ipcClient.sendRequest(IpcProtocol.OpCode.STATUS, IpcProtocol.paramsStatus(), resp -> {
             if ("ok".equals(resp.status) && resp.data != null) {
@@ -159,6 +163,11 @@ public class ObsidianBackupForge {
     }
 
     private int doCancel(CommandSourceStack src) {
+        if (config.isEmbedded()) {
+            embeddedEngine.cancel();
+            sendInfo(src, "已请求终止");
+            return 1;
+        }
         ipcClient.sendRequest(IpcProtocol.OpCode.CANCEL, Map.of(),
             resp -> sendInfo(src, "ok".equals(resp.status) ? "已终止" : "终止失败"));
         return 1;
@@ -183,6 +192,20 @@ public class ObsidianBackupForge {
     }
 
     private int doTop(CommandSourceStack src, int limit) {
+        if (config.isEmbedded()) {
+            new Thread(() -> {
+                try {
+                    src.sendSystemMessage(Component.literal("─── 存储热力图 TOP " + limit + " ───")
+                        .withStyle(ChatFormatting.DARK_PURPLE));
+                    for (var f : embeddedEngine.top(limit)) {
+                        src.sendSystemMessage(Component.literal(String.format("  %s [%d bytes]", f.path, f.size)));
+                    }
+                } catch (Exception e) {
+                    sendError(src, "分析失败: " + e.getMessage());
+                }
+            }).start();
+            return 1;
+        }
         ipcClient.sendRequest(IpcProtocol.OpCode.TOP, IpcProtocol.paramsTop(limit), resp -> {
             if ("ok".equals(resp.status) && resp.data != null) {
                 src.sendSystemMessage(Component.literal("─── 存储热力图 TOP " + limit + " ───")
@@ -193,12 +216,33 @@ public class ObsidianBackupForge {
     }
 
     private int doVerify(CommandSourceStack src, boolean repair) {
+        if (config.isEmbedded()) {
+            new Thread(() -> {
+                try {
+                    var v = embeddedEngine.verify();
+                    sendInfo(src, String.format("巡检: %d 块, 健康 %d, 损坏 %d", v.checked, v.healthy, v.corrupted));
+                } catch (Exception e) {
+                    sendError(src, "巡检失败: " + e.getMessage());
+                }
+            }).start();
+            return 1;
+        }
         ipcClient.sendRequest(IpcProtocol.OpCode.VERIFY, IpcProtocol.paramsVerify(repair),
             resp -> sendInfo(src, "ok".equals(resp.status) ? "巡检完成" : "巡检失败"));
         return 1;
     }
 
     private int doForecast(CommandSourceStack src) {
+        if (config.isEmbedded()) {
+            new Thread(() -> {
+                try {
+                    sendInfo(src, embeddedEngine.forecast());
+                } catch (Exception e) {
+                    sendError(src, "预测失败: " + e.getMessage());
+                }
+            }).start();
+            return 1;
+        }
         ipcClient.sendRequest(IpcProtocol.OpCode.FORECAST, IpcProtocol.paramsForecast(), resp -> {
             if ("ok".equals(resp.status) && resp.data != null) {
                 var d = resp.data;
