@@ -1,5 +1,6 @@
 package com.obsidian.backup.bukkit;
 
+import com.obsidian.backup.common.EmbeddedBackupEngine;
 import com.obsidian.backup.common.IpcClient;
 import com.obsidian.backup.common.IpcProtocol;
 import com.obsidian.backup.common.ObsidianConfig;
@@ -22,6 +23,7 @@ public class ObsidianBackupPlugin extends JavaPlugin implements CommandExecutor,
 
     private ObsidianConfig config;
     private IpcClient ipcClient;
+    private EmbeddedBackupEngine embeddedEngine;
     private final IpcClient.Logger ipcLogger = new IpcClient.Logger() {
         @Override public void info(String msg, Object... args) {
             getLogger().info(String.format(msg.replace("{}", "%s"), args));
@@ -46,12 +48,17 @@ public class ObsidianBackupPlugin extends JavaPlugin implements CommandExecutor,
             cmd.setTabCompleter(this);
         }
 
-        // Connect to Sidecar
-        Bukkit.getScheduler().runTaskLater(this, () -> {
-            if (!ipcClient.connect()) {
-                getLogger().warning("Failed to connect to Sidecar daemon at " + config.sidecarSocketPath());
-            }
-        }, 20L);
+        // Init embedded engine or connect to Sidecar
+        if (config.isEmbedded()) {
+            embeddedEngine = new EmbeddedBackupEngine(getServer().getWorldContainer().toPath());
+            getLogger().info("[Obsidian Backup] Embedded engine — no external process");
+        } else {
+            Bukkit.getScheduler().runTaskLater(this, () -> {
+                if (!ipcClient.connect()) {
+                    getLogger().warning("Failed to connect to Sidecar daemon at " + config.sidecarSocketPath());
+                }
+            }, 20L);
+        }
 
         // Poll IPC responses every tick
         Bukkit.getScheduler().runTaskTimer(this, () -> ipcClient.pollResponses(), 1L, 1L);
@@ -105,6 +112,18 @@ public class ObsidianBackupPlugin extends JavaPlugin implements CommandExecutor,
                 if (cancel) {
                     ipcClient.sendRequest(IpcProtocol.OpCode.CANCEL, Map.of(),
                         resp -> send(sender, "ok".equals(resp.status) ? "&a已终止并回滚" : "&c终止失败"));
+                } else if (config.isEmbedded()) {
+                    send(sender, "&b启动" + (full ? "全量" : "增量") + "备份" +
+                        (tag != null ? " (标签: " + tag + ")" : "") + "...");
+                    new Thread(() -> {
+                        try {
+                            var result = embeddedEngine.backup(tag, !full);
+                            send(sender, "&a备份完成! 快照: " + result.snapshotId +
+                                " | 文件: " + result.filesCopied + " | 大小: " + result.bytesCopied + " bytes");
+                        } catch (Exception e) {
+                            send(sender, "&c备份失败: " + e.getMessage());
+                        }
+                    }, "Obsidian-Backup").start();
                 } else {
                     send(sender, "&b启动" + (full ? "全量" : "增量") + "备份" +
                         (tag != null ? " (标签: " + tag + ")" : "") + "...");
@@ -125,10 +144,22 @@ public class ObsidianBackupPlugin extends JavaPlugin implements CommandExecutor,
                 String sid = args[1];
                 String file = extractArg(args, "--file");
                 String chunk = extractArg(args, "--chunk");
-                send(sender, "&b正在沙箱中恢复快照 " + sid + "...");
-                ipcClient.sendRequest(IpcProtocol.OpCode.RESTORE,
-                    IpcProtocol.paramsRestore(sid, file, chunk),
-                    resp -> send(sender, "ok".equals(resp.status) ? "&a恢复完成" : "&c恢复失败: " + resp.message));
+                if (config.isEmbedded()) {
+                    send(sender, "&b正在恢复快照 " + sid + "...");
+                    new Thread(() -> {
+                        try {
+                            embeddedEngine.restore(sid);
+                            send(sender, "&a恢复完成");
+                        } catch (Exception e) {
+                            send(sender, "&c恢复失败: " + e.getMessage());
+                        }
+                    }, "Obsidian-Restore").start();
+                } else {
+                    send(sender, "&b正在沙箱中恢复快照 " + sid + "...");
+                    ipcClient.sendRequest(IpcProtocol.OpCode.RESTORE,
+                        IpcProtocol.paramsRestore(sid, file, chunk),
+                        resp -> send(sender, "ok".equals(resp.status) ? "&a恢复完成" : "&c恢复失败: " + resp.message));
+                }
             }
             case "top" -> {
                 int limit = args.length > 1 ? parseInt(args[1], 5) : 5;

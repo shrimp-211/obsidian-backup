@@ -252,6 +252,23 @@ object ObsidianCommandRoot {
             source.sendSystemMessage(ChatRenderer().info("  标签: $tag"))
         }
 
+        if (mod.config.embeddedEngine) {
+            val engine = mod.embeddedEngine!!
+            Thread {
+                try {
+                    val result = engine.backup(tag, incremental)
+                    source.sendSystemMessage(ChatRenderer().success(
+                        "备份完成! 快照 ID: ${result.snapshotId} | " +
+                        "文件: ${result.filesCopied} | 大小: ${ChatRenderer.formatBytes(result.bytesCopied)}"
+                    ))
+                } catch (e: Exception) {
+                    source.sendSystemMessage(ChatRenderer().error("备份失败: ${e.message}"))
+                }
+                onlineOps.forEach { mod.bossBarIndicator.hideForPlayer(it) }
+            }.apply { name = "Obsidian-Backup" }.start()
+            return 1
+        }
+
         mod.ipcClient.sendRequest(
             op = IpcProtocol.OpCode.BACKUP,
             params = IpcProtocol.Params.backup(
@@ -350,6 +367,19 @@ object ObsidianCommandRoot {
         ))
 
         BackupHooks.fireBeforeRestore(server, snapshotId, filePath)
+
+        if (mod.config.embeddedEngine) {
+            val engine = mod.embeddedEngine!!
+            Thread {
+                try {
+                    engine.restore(snapshotId)
+                    source.sendSystemMessage(ChatRenderer().success("✅ 恢复完成"))
+                } catch (e: Exception) {
+                    source.sendSystemMessage(ChatRenderer().error("恢复失败: ${e.message}"))
+                }
+            }.apply { name = "Obsidian-Restore" }.start()
+            return 1
+        }
 
         mod.ipcClient.sendRequest(
             op = IpcProtocol.OpCode.RESTORE,

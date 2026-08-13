@@ -1,5 +1,6 @@
 package com.obsidian.backup.forge;
 
+import com.obsidian.backup.common.EmbeddedBackupEngine;
 import com.obsidian.backup.common.IpcClient;
 import com.obsidian.backup.common.IpcProtocol;
 import com.obsidian.backup.common.ObsidianConfig;
@@ -36,6 +37,7 @@ public class ObsidianBackupForge {
 
     private ObsidianConfig config;
     private IpcClient ipcClient;
+    private EmbeddedBackupEngine embeddedEngine;
     private final IpcClient.Logger ipcLogger = new IpcClient.Logger() {
         @Override public void info(String msg, Object... args) { LOGGER.info(msg, args); }
         @Override public void warn(String msg, Object... args) { LOGGER.warn(msg, args); }
@@ -70,8 +72,13 @@ public class ObsidianBackupForge {
 
     @SubscribeEvent
     public void onServerStarted(ServerStartedEvent event) {
-        LOGGER.info("[Obsidian Backup] Server started — connecting to Sidecar...");
-        ipcClient.connect();
+        if (config.isEmbedded()) {
+            LOGGER.info("[Obsidian Backup] Embedded engine — no external process");
+            embeddedEngine = new EmbeddedBackupEngine(event.getServer().getServerDirectory());
+        } else {
+            LOGGER.info("[Obsidian Backup] Server started — connecting to Sidecar...");
+            ipcClient.connect();
+        }
     }
 
     @SubscribeEvent
@@ -128,6 +135,18 @@ public class ObsidianBackupForge {
 
     private int doBackup(CommandSourceStack src, String tag, boolean incremental) {
         sendInfo(src, "启动备份...");
+        if (config.isEmbedded()) {
+            new Thread(() -> {
+                try {
+                    var result = embeddedEngine.backup(tag, incremental);
+                    sendSuccess(src, "备份完成! 快照: " + result.snapshotId
+                        + " | 文件: " + result.filesCopied + " | 大小: " + result.bytesCopied + " bytes");
+                } catch (Exception e) {
+                    sendError(src, "备份失败: " + e.getMessage());
+                }
+            }, "Obsidian-Backup").start();
+            return 1;
+        }
         ipcClient.sendRequest(IpcProtocol.OpCode.BACKUP, IpcProtocol.paramsBackup(tag, incremental), resp -> {
             if ("ok".equals(resp.status) && resp.data != null) {
                 var d = resp.data;
@@ -146,7 +165,18 @@ public class ObsidianBackupForge {
     }
 
     private int doRestore(CommandSourceStack src, String sid, String file, String chunk) {
-        sendInfo(src, "沙箱恢复中...");
+        sendInfo(src, "恢复中...");
+        if (config.isEmbedded()) {
+            new Thread(() -> {
+                try {
+                    embeddedEngine.restore(sid);
+                    sendSuccess(src, "恢复完成");
+                } catch (Exception e) {
+                    sendError(src, "恢复失败: " + e.getMessage());
+                }
+            }, "Obsidian-Restore").start();
+            return 1;
+        }
         ipcClient.sendRequest(IpcProtocol.OpCode.RESTORE, IpcProtocol.paramsRestore(sid, file, chunk),
             resp -> sendSuccess(src, "ok".equals(resp.status) ? "恢复完成" : "恢复失败: " + resp.message));
         return 1;

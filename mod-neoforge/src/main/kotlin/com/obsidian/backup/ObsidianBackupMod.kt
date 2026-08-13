@@ -1,6 +1,7 @@
 package com.obsidian.backup
 
 import com.obsidian.backup.command.ObsidianCommandRoot
+import com.obsidian.backup.common.EmbeddedBackupEngine
 import com.obsidian.backup.config.ModConfig
 import com.obsidian.backup.hook.BackupHooks
 import com.obsidian.backup.ipc.IpcClient
@@ -38,6 +39,7 @@ class ObsidianBackupMod(
 
     val config: ModConfig = ModConfig.load()
     val ipcClient: IpcClient = IpcClient(config)
+    var embeddedEngine: EmbeddedBackupEngine? = null
     val chatRenderer: ChatRenderer = ChatRenderer()
     val bossBarIndicator: BossBarIndicator = BossBarIndicator()
     val hooks: BackupHooks = BackupHooks()
@@ -68,8 +70,13 @@ class ObsidianBackupMod(
     }
 
     private fun onServerStarted(event: ServerStartedEvent) {
-        LOGGER.info("[Obsidian Backup] Connecting to Sidecar daemon...")
-        ipcClient.connect()
+        if (config.embeddedEngine) {
+            LOGGER.info("[Obsidian Backup] Embedded engine — no external process")
+            embeddedEngine = EmbeddedBackupEngine(event.server.serverDirectory)
+        } else {
+            LOGGER.info("[Obsidian Backup] Connecting to Sidecar daemon...")
+            ipcClient.connect()
+        }
         hooks.onServerStart(event.server)
     }
 
