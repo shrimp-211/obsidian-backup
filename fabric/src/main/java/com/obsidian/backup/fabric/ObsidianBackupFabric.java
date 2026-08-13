@@ -1,5 +1,6 @@
 package com.obsidian.backup.fabric;
 
+import com.obsidian.backup.common.EmbeddedBackupEngine;
 import com.obsidian.backup.common.IpcClient;
 import com.obsidian.backup.common.IpcProtocol;
 import com.obsidian.backup.common.ObsidianConfig;
@@ -36,6 +37,7 @@ public class ObsidianBackupFabric implements DedicatedServerModInitializer {
 
     private ObsidianConfig config;
     private IpcClient ipcClient;
+    private EmbeddedBackupEngine embeddedEngine;
     private final IpcClient.Logger ipcLogger = new IpcClient.Logger() {
         @Override public void info(String msg, Object... args) { LOGGER.info(msg, args); }
         @Override public void warn(String msg, Object... args) { LOGGER.warn(msg, args); }
@@ -56,8 +58,13 @@ public class ObsidianBackupFabric implements DedicatedServerModInitializer {
 
         // Lifecycle events
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
-            LOGGER.info("[Obsidian Backup] Server started — connecting to Sidecar...");
-            ipcClient.connect();
+            if (config.isEmbedded()) {
+                LOGGER.info("[Obsidian Backup] Embedded engine — no external process");
+                embeddedEngine = new EmbeddedBackupEngine(server.getServerDirectory());
+            } else {
+                LOGGER.info("[Obsidian Backup] Server started — connecting to Sidecar...");
+                ipcClient.connect();
+            }
         });
 
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
@@ -178,6 +185,21 @@ public class ObsidianBackupFabric implements DedicatedServerModInitializer {
 
     private int executeBackup(CommandSourceStack src, String tag, boolean incremental) {
         sendInfo(src, incremental ? "启动增量备份..." : "启动全量备份...");
+        if (config.isEmbedded()) {
+            // Embedded engine — run on a background thread so the main tick isn't blocked.
+            new Thread(() -> {
+                try {
+                    var result = embeddedEngine.backup(tag, incremental);
+                    src.sendSystemMessage(Component.literal(String.format(
+                        "✅ 备份完成! 快照: %s | 文件: %d | 大小: %d bytes",
+                        result.snapshotId, result.filesCopied, result.bytesCopied)).withStyle(ChatFormatting.GREEN));
+                } catch (Exception e) {
+                    src.sendSystemMessage(Component.literal("❌ 备份失败: " + e.getMessage())
+                        .withStyle(ChatFormatting.RED));
+                }
+            }, "Obsidian-Backup").start();
+            return 1;
+        }
         ipcClient.sendRequest(IpcProtocol.OpCode.BACKUP, IpcProtocol.paramsBackup(tag, incremental),
             resp -> {
                 if ("ok".equals(resp.status) && resp.data != null) {
@@ -194,7 +216,19 @@ public class ObsidianBackupFabric implements DedicatedServerModInitializer {
     }
 
     private int executeRestore(CommandSourceStack src, String sid, String filePath, String chunkCoord) {
-        sendInfo(src, "正在沙箱中准备恢复快照 " + sid + "...");
+        sendInfo(src, "正在恢复快照 " + sid + "...");
+        if (config.isEmbedded()) {
+            new Thread(() -> {
+                try {
+                    embeddedEngine.restore(sid);
+                    src.sendSystemMessage(Component.literal("✅ 恢复完成").withStyle(ChatFormatting.GREEN));
+                } catch (Exception e) {
+                    src.sendSystemMessage(Component.literal("❌ 恢复失败: " + e.getMessage())
+                        .withStyle(ChatFormatting.RED));
+                }
+            }, "Obsidian-Restore").start();
+            return 1;
+        }
         ipcClient.sendRequest(IpcProtocol.OpCode.RESTORE, IpcProtocol.paramsRestore(sid, filePath, chunkCoord),
             resp -> {
                 if ("ok".equals(resp.status)) {
