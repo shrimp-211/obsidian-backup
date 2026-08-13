@@ -70,6 +70,12 @@ object ObsidianCommandRoot {
                 val mod = ObsidianBackupMod.instance
                 val source = ctx.source
 
+                if (mod.config.embeddedEngine) {
+                    val state = if (mod.embeddedEngine!!.isRunning) "备份中" else "空闲"
+                    source.sendSystemMessage(ChatRenderer().info("内置引擎状态: $state"))
+                    return@executes 1
+                }
+
                 source.sendSystemMessage(ChatRenderer().info("正在拉取 Sidecar 实时状态..."))
 
                 mod.ipcClient.sendRequest(
@@ -113,6 +119,21 @@ object ObsidianCommandRoot {
         val mod = ObsidianBackupMod.instance
         val source = ctx.source
 
+        if (mod.config.embeddedEngine) {
+            Thread {
+                try {
+                    val files = mod.embeddedEngine!!.top(limit)
+                    source.sendSystemMessage(ChatRenderer().info("─── 存储空间热力图 TOP $limit ───"))
+                    files.forEach { f ->
+                        source.sendSystemMessage(ChatRenderer().info("  ${f.path} [${f.size} bytes]"))
+                    }
+                } catch (e: Exception) {
+                    source.sendSystemMessage(ChatRenderer().error("分析失败: ${e.message}"))
+                }
+            }.apply { name = "Obsidian-Top" }.start()
+            return 1
+        }
+
         source.sendSystemMessage(ChatRenderer().info("正在分析存储空间..."))
 
         mod.ipcClient.sendRequest(
@@ -152,6 +173,17 @@ object ObsidianCommandRoot {
             .executes { ctx ->
                 val mod = ObsidianBackupMod.instance
                 val source = ctx.source
+
+                if (mod.config.embeddedEngine) {
+                    Thread {
+                        try {
+                            source.sendSystemMessage(ChatRenderer().info("📊 ${mod.embeddedEngine!!.forecast()}"))
+                        } catch (e: Exception) {
+                            source.sendSystemMessage(ChatRenderer().error("预测失败: ${e.message}"))
+                        }
+                    }.apply { name = "Obsidian-Forecast" }.start()
+                    return@executes 1
+                }
 
                 mod.ipcClient.sendRequest(
                     op = IpcProtocol.OpCode.FORECAST,
@@ -420,6 +452,22 @@ object ObsidianCommandRoot {
         val mod = ObsidianBackupMod.instance
         val source = ctx.source
 
+        if (mod.config.embeddedEngine) {
+            Thread {
+                try {
+                    val d = mod.embeddedEngine!!.diff(idA, idB)
+                    source.sendSystemMessage(Component.literal("─── 快照差异对比 ───")
+                        .withStyle(net.minecraft.ChatFormatting.GOLD))
+                    source.sendSystemMessage(ChatRenderer().success("+ 新增: ${d.added.size}"))
+                    source.sendSystemMessage(ChatRenderer().warn("* 修改: ${d.modified.size}"))
+                    source.sendSystemMessage(ChatRenderer().error("- 删除: ${d.deleted.size}"))
+                } catch (e: Exception) {
+                    source.sendSystemMessage(ChatRenderer().error("对比失败: ${e.message}"))
+                }
+            }.apply { name = "Obsidian-Diff" }.start()
+            return 1
+        }
+
         source.sendSystemMessage(ChatRenderer().info("正在对比快照 $idA ↔ $idB ..."))
 
         mod.ipcClient.sendRequest(
@@ -604,6 +652,20 @@ object ObsidianCommandRoot {
 
         val action = if (repair) "巡检并修复" else "巡检"
         source.sendSystemMessage(ChatRenderer().info("🔍 正在${action}整仓快照完整性..."))
+
+        if (mod.config.embeddedEngine) {
+            Thread {
+                try {
+                    val v = mod.embeddedEngine!!.verify()
+                    source.sendSystemMessage(ChatRenderer().success(
+                        "巡检完成: 总计 ${v.checked} | 健康 ${v.healthy} | 损坏 ${v.corrupted}"
+                    ))
+                } catch (e: Exception) {
+                    source.sendSystemMessage(ChatRenderer().error("巡检失败: ${e.message}"))
+                }
+            }.apply { name = "Obsidian-Verify" }.start()
+            return 1
+        }
 
         mod.ipcClient.sendRequest(
             op = IpcProtocol.OpCode.VERIFY,
