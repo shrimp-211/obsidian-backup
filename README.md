@@ -75,23 +75,20 @@ cd mc26.2
 
 ---
 
-## 🚀 部署（像 FTB Backups 一样简单）
+## 🚀 部署（三步）
 
-无需手动启动守护进程——mod 会在服务端启动时**自动拉起 Sidecar 进程**，停止时自动关闭。
+### 前提
 
-### 第一步：放置 Sidecar 二进制（一次性）
+一个 Minecraft 服务端 + 已下载的 [obsidian-sidecar](https://github.com/shrimp-211/obsidian-backup_server/releases) 二进制。
 
-从 [obsidian-backup_server Release](https://github.com/shrimp-211/obsidian-backup_server/releases)
-下载对应平台的 `obsidian-sidecar`（Linux）/ `obsidian-sidecar.exe`（Windows），
-放入 Minecraft 服务端根目录：
+### 第一步：启动 Sidecar 守护进程
 
 ```bash
-/path/to/minecraft/server/
-├── obsidian-sidecar          # ← 放这里（Linux）
-├── server.jar
-├── mods/
-└── plugins/
+# 在 Minecraft 服务端根目录下启动（独立进程）
+./obsidian-sidecar --server-root /path/to/minecraft/server
 ```
+
+> Sidecar 会在 `.obsidian/` 下创建 ipc socket、RocksDB 索引、对象存储等运行时数据。
 
 ### 第二步：放入 mod / plugin
 
@@ -103,22 +100,13 @@ cp obsidian-backup-fabric-1.21.1.jar /path/to/server/mods/
 cp obsidian-backup-bukkit-1.21.1.jar /path/to/server/plugins/
 ```
 
-### 第三步：启动游戏服务端（完成）
+### 第三步：启动游戏服务端
 
-启动服务端，mod 自动：
-1. 拉起 Sidecar 进程（若尚未运行）
-2. 连接 IPC 并完成认证
-
-控制台应看到：
+服务端启动后，mod 自动连接 Sidecar 的 IPC，完成令牌认证握手。控制台应看到：
 
 ```
-[Obsidian] Starting Sidecar process: /path/to/server/obsidian-sidecar
-[Obsidian] Sidecar is up (200 ms)
-[Obsidian Backup] Connected and authenticated
+[Obsidian Backup] Connected and authenticated at .obsidian/ipc/obsidian.sock
 ```
-
-> **无需手动运行任何守护进程**。Sidecar 随服务端启动而启动、随服务端停止而关闭。
-> 若你更希望手动管理（如用 systemd / Docker），设置 `-Dobsidian.autostart_sidecar=false` 即可。
 
 ---
 
@@ -130,8 +118,6 @@ cp obsidian-backup-bukkit-1.21.1.jar /path/to/server/plugins/
 |------|--------|------|
 | `obsidian.socket` | `.obsidian/ipc/obsidian.sock` | Sidecar 的 IPC 地址（Unix socket 路径 / Windows pipe 名） |
 | `obsidian.token` | `obsidian-default-token` | IPC 认证令牌（须与 Sidecar 一致） |
-| `obsidian.sidecar_binary` | `obsidian-sidecar`（自动加 `.exe`） | Sidecar 二进制文件名（相对服务端根目录） |
-| `obsidian.autostart_sidecar` | `true` | 是否自动拉起 Sidecar 进程（`false` 则手动管理） |
 | `obsidian.connect_timeout` | `5000` | 连接超时（毫秒） |
 | `obsidian.request_timeout` | `30000` | 请求超时（毫秒） |
 
