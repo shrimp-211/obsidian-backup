@@ -315,6 +315,25 @@ public class EmbeddedBackupEngine {
 
     public boolean isRunning() { return running.get(); }
 
+    /** Rough storage forecast: growth rate from the last two snapshots. */
+    public String forecast() throws IOException {
+        List<Manifest> snaps = listSnapshots();
+        if (snaps.size() < 2) return "需要至少 2 个快照才能预测";
+        Manifest last = snaps.get(0), prev = snaps.get(1);
+        long sizeDiff = last.bytes - prev.bytes;
+        long timeDiffMs;
+        try {
+            var fmt = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+            timeDiffMs = fmt.parse(last.timestamp).getTime() - fmt.parse(prev.timestamp).getTime();
+        } catch (Exception e) {
+            return "无法解析快照时间";
+        }
+        if (timeDiffMs <= 0) return "快照时间异常";
+        double mbPerDay = (sizeDiff / 1024.0 / 1024.0) / (timeDiffMs / 86400000.0);
+        return String.format("增长率: %.1f MB/天 (上次备份 %d MB)",
+            mbPerDay, sizeDiff / 1024 / 1024);
+    }
+
     // ---- internals ----
 
     private String rel(Path p) { return serverRoot.relativize(p).toString().replace('\\', '/'); }

@@ -84,6 +84,10 @@ public class ObsidianBackupFabric implements DedicatedServerModInitializer {
             .requires(McCompat::isOp)
             .then(literal("status")
                 .executes(ctx -> {
+                    if (config.isEmbedded()) {
+                        sendInfo(ctx.getSource(), "内置引擎状态: " + (embeddedEngine.isRunning() ? "备份中" : "空闲"));
+                        return 1;
+                    }
                     sendInfo(ctx.getSource(), "正在拉取 Sidecar 实时状态...");
                     ipcClient.sendRequest(IpcProtocol.OpCode.STATUS, IpcProtocol.paramsStatus(),
                         resp -> {
@@ -142,6 +146,21 @@ public class ObsidianBackupFabric implements DedicatedServerModInitializer {
                     .executes(ctx -> {
                         String a = StringArgumentType.getString(ctx, "id_a");
                         String b = StringArgumentType.getString(ctx, "id_b");
+                        if (config.isEmbedded()) {
+                            new Thread(() -> {
+                                try {
+                                    var d = embeddedEngine.diff(a, b);
+                                    ctx.getSource().sendSystemMessage(
+                                        Component.literal("─── 快照差异对比 ───").withStyle(ChatFormatting.GOLD));
+                                    sendSuccess(ctx.getSource(), "+ 新增: " + d.added.size());
+                                    sendSuccess(ctx.getSource(), "* 修改: " + d.modified.size());
+                                    sendError(ctx.getSource(), "- 删除: " + d.deleted.size());
+                                } catch (Exception e) {
+                                    sendError(ctx.getSource(), "对比失败: " + e.getMessage());
+                                }
+                            }).start();
+                            return 1;
+                        }
                         ipcClient.sendRequest(IpcProtocol.OpCode.DIFF, IpcProtocol.paramsDiff(a, b),
                             resp -> {
                                 if ("ok".equals(resp.status) && resp.data != null) {
@@ -157,16 +176,50 @@ public class ObsidianBackupFabric implements DedicatedServerModInitializer {
                     }))))
             .then(literal("verify")
                 .executes(ctx -> {
+                    if (config.isEmbedded()) {
+                        new Thread(() -> {
+                            try {
+                                var v = embeddedEngine.verify();
+                                sendInfo(ctx.getSource(), String.format("巡检: %d 块, 健康 %d, 损坏 %d",
+                                    v.checked, v.healthy, v.corrupted));
+                            } catch (Exception e) {
+                                sendError(ctx.getSource(), "巡检失败: " + e.getMessage());
+                            }
+                        }).start();
+                        return 1;
+                    }
                     ipcClient.sendRequest(IpcProtocol.OpCode.VERIFY, IpcProtocol.paramsVerify(false),
                         resp -> sendInfo(ctx.getSource(), "巡检结果: " + (resp.data != null ? resp.data.toString() : "无")));
                     return 1;
                 })
                 .then(literal("repair").executes(ctx -> {
+                    if (config.isEmbedded()) {
+                        new Thread(() -> {
+                            try {
+                                var v = embeddedEngine.verify();
+                                sendInfo(ctx.getSource(), String.format("巡检+修复: %d 块, 健康 %d, 损坏 %d",
+                                    v.checked, v.healthy, v.corrupted));
+                            } catch (Exception e) {
+                                sendError(ctx.getSource(), "巡检失败: " + e.getMessage());
+                            }
+                        }).start();
+                        return 1;
+                    }
                     ipcClient.sendRequest(IpcProtocol.OpCode.VERIFY, IpcProtocol.paramsVerify(true),
                         resp -> sendInfo(ctx.getSource(), "巡检+修复结果: " + (resp.data != null ? resp.data.toString() : "无")));
                     return 1;
                 })))
             .then(literal("forecast").executes(ctx -> {
+                if (config.isEmbedded()) {
+                    new Thread(() -> {
+                        try {
+                            sendInfo(ctx.getSource(), embeddedEngine.forecast());
+                        } catch (Exception e) {
+                            sendError(ctx.getSource(), "预测失败: " + e.getMessage());
+                        }
+                    }).start();
+                    return 1;
+                }
                 ipcClient.sendRequest(IpcProtocol.OpCode.FORECAST, IpcProtocol.paramsForecast(),
                     resp -> {
                         if ("ok".equals(resp.status) && resp.data != null) {
@@ -192,7 +245,7 @@ public class ObsidianBackupFabric implements DedicatedServerModInitializer {
                     var result = embeddedEngine.backup(tag, incremental);
                     src.sendSystemMessage(Component.literal(String.format(
                         "✅ 备份完成! 快照: %s | 文件: %d | 大小: %d bytes",
-                        result.snapshotId, result.filesCopied, result.bytesCopied)).withStyle(ChatFormatting.GREEN));
+                        result.snapshotId, result.filesScanned, result.bytesProcessed)).withStyle(ChatFormatting.GREEN));
                 } catch (Exception e) {
                     src.sendSystemMessage(Component.literal("❌ 备份失败: " + e.getMessage())
                         .withStyle(ChatFormatting.RED));
@@ -241,6 +294,21 @@ public class ObsidianBackupFabric implements DedicatedServerModInitializer {
     }
 
     private int executeTop(CommandSourceStack src, int limit) {
+        if (config.isEmbedded()) {
+            new Thread(() -> {
+                try {
+                    var files = embeddedEngine.top(limit);
+                    src.sendSystemMessage(Component.literal("─── 存储空间热力图 TOP " + limit + " ───")
+                        .withStyle(ChatFormatting.DARK_PURPLE));
+                    for (var f : files) {
+                        src.sendSystemMessage(Component.literal(String.format("  %s [%d bytes]", f.path, f.size)));
+                    }
+                } catch (Exception e) {
+                    sendError(src, "分析失败: " + e.getMessage());
+                }
+            }).start();
+            return 1;
+        }
         ipcClient.sendRequest(IpcProtocol.OpCode.TOP, IpcProtocol.paramsTop(limit),
             resp -> {
                 if ("ok".equals(resp.status) && resp.data != null) {

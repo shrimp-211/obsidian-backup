@@ -259,7 +259,7 @@ object ObsidianCommandRoot {
                     val result = engine.backup(tag, incremental)
                     source.sendSystemMessage(ChatRenderer().success(
                         "备份完成! 快照 ID: ${result.snapshotId} | " +
-                        "文件: ${result.filesCopied} | 大小: ${ChatRenderer.formatBytes(result.bytesCopied)}"
+                        "文件: ${result.filesScanned} | 大小: ${ChatRenderer.formatBytes(result.bytesProcessed)}"
                     ))
                 } catch (e: Exception) {
                     source.sendSystemMessage(ChatRenderer().error("备份失败: ${e.message}"))

@@ -140,7 +140,7 @@ public class ObsidianBackupForge {
                 try {
                     var result = embeddedEngine.backup(tag, incremental);
                     sendSuccess(src, "备份完成! 快照: " + result.snapshotId
-                        + " | 文件: " + result.filesCopied + " | 大小: " + result.bytesCopied + " bytes");
+                        + " | 文件: " + result.filesScanned + " | 大小: " + result.bytesProcessed + " bytes");
                 } catch (Exception e) {
                     sendError(src, "备份失败: " + e.getMessage());
                 }
